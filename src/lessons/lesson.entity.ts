@@ -27,6 +27,12 @@ export class Lesson {
   @Column('int')
   order: number;
 
+  @Column({type:'text', nullable: true}) // optional additional resources for the lesson
+  resources: string;
+
+  @Column({type: 'text', nullable: true}) // optional notes on the lesson
+  notes: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }
