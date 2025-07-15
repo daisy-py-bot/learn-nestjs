@@ -1,4 +1,26 @@
-import { IsUUID, IsString, IsInt, IsArray, IsNotEmpty, IsOptional } from 'class-validator';
+import {
+  IsUUID,
+  IsString,
+  IsInt,
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class QuizQuestionDto {
+  @IsString()
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  prompt: string;
+
+  @IsString()
+  @IsNotEmpty()
+  sampleAnswer: string;
+}
 
 export class CreateQuizDto {
   @IsUUID()
@@ -10,8 +32,10 @@ export class CreateQuizDto {
 
   @IsInt()
   @IsOptional()
-  unlockAfter: number;
+  unlockAfter?: number;
 
   @IsArray()
-  questions: any[];
+  @ValidateNested({ each: true })
+  @Type(() => QuizQuestionDto)
+  questions: QuizQuestionDto[];
 }

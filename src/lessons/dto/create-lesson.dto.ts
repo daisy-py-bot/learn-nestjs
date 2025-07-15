@@ -17,4 +17,12 @@ export class CreateLessonDto {
 
   @IsInt()
   order: number;
+
+  @IsOptional()
+  @IsString()
+  resources?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

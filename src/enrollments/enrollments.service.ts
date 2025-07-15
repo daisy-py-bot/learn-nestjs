@@ -6,6 +6,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { User } from 'src/users/user.entity';
 import { Course } from 'src/courses/course.entity';
+import { BadgesService } from 'src/badges/badges.service';
 
 @Injectable()
 export class EnrollmentsService {
@@ -18,6 +19,8 @@ export class EnrollmentsService {
 
     @InjectRepository(Course)
     private courseRepo: Repository<Course>,
+
+    private readonly badgeService: BadgesService,
   ) {}
 
   async create(data: CreateEnrollmentDto) {
@@ -33,7 +36,16 @@ export class EnrollmentsService {
       status: data.status || EnrollmentStatus.IN_PROGRESS,
     });
 
-    return this.enrollRepo.save(enrollment);
+    const saved = await this.enrollRepo.save(enrollment);
+
+        // Award "First Enrolment" badge
+    const badge = await this.badgeService.getBadgeByName('First Enrolment');
+    if (badge) {
+      await this.badgeService.awardBadge(user.id, badge.id);
+    }
+
+    return saved;
+    // return this.enrollRepo.save(enrollment);
   }
 
   findAll() {
@@ -50,6 +62,12 @@ export class EnrollmentsService {
 
     if (updates.status === EnrollmentStatus.COMPLETED) {
       enrollment.completedAt = new Date();
+
+      //  Award "Course Finisher" badge
+      const badge = await this.badgeService.getBadgeByName('Course Finisher');
+      if (badge) {
+        await this.badgeService.awardBadge(enrollment.user.id, badge.id);
+      }
     }
 
     Object.assign(enrollment, updates);
@@ -61,4 +79,8 @@ export class EnrollmentsService {
     if (!enrollment) throw new NotFoundException('Enrollment not found');
     return this.enrollRepo.remove(enrollment);
   }
+
+
+
+
 }

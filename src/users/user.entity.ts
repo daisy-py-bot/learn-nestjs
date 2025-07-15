@@ -1,4 +1,6 @@
-import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn} from 'typeorm';
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToMany, JoinTable} from 'typeorm';
+import { Badge } from 'src/badges/badge.entity';
+
 
 export enum UserRole{
     LEARNER = 'learner',
@@ -39,5 +41,10 @@ export class User{
 
     @Column({type: 'timestamp', nullable: true})
     lastlogin: Date;
+
+    @ManyToMany(() => Badge, (badge) => badge.users)
+    @JoinTable()
+    badges: Badge[];
+
 
 }

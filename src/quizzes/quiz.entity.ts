@@ -22,7 +22,11 @@ export class Quiz {
   unlockAfter: number;
 
   @Column({ type: 'jsonb' })
-  questions: any;
+  questions: {
+    id: string; // unique identifier for the question 
+    prompt: string; // the actual question text
+    sampleAnswer: string; // what a good answer should contain
+  }[];
 
   @CreateDateColumn()
   createdAt: Date;

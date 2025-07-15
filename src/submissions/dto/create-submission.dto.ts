@@ -1,4 +1,12 @@
-import { IsUUID, IsOptional, IsNumber, IsNotEmpty } from 'class-validator';
+import { IsUUID, IsOptional, IsArray,ValidateNested, IsString, } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class ResponseItem {
+  @IsString()
+  questionId: string;
+
+  answerText: string;
+}
 
 export class CreateSubmissionDto {
   @IsUUID()
@@ -12,9 +20,8 @@ export class CreateSubmissionDto {
   @IsOptional()
   assessmentId?: string;
 
-  @IsNumber()
-  score: number;
-
-  @IsNotEmpty()
-  response: any;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ResponseItem)
+  responses: ResponseItem[];
 }

@@ -9,7 +9,7 @@ export class SubmissionsController {
 
   @Post()
   create(@Body() dto: CreateSubmissionDto) {
-    return this.service.create(dto);
+    return this.service.submit(dto);
   }
 
   @Get()
@@ -25,6 +25,11 @@ export class SubmissionsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateSubmissionDto) {
     return this.service.update(id, dto);
+  }
+
+  @Patch(':id/grade')
+  grade(@Param('id') id: string, @Body('score') score: number) {
+    return this.service.grade(id, score);
   }
 
   @Delete(':id')

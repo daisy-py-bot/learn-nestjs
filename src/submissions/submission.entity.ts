@@ -8,6 +8,7 @@ import {
 import { User } from 'src/users/user.entity';
 import { Quiz } from 'src/quizzes/quiz.entity';
 import { FinalAssessment } from 'src/final-assessments/final-assessment.entity';
+import { QuizResponse } from '../quizzes/types';
 
 @Entity()
 export class Submission {
@@ -23,11 +24,19 @@ export class Submission {
   @ManyToOne(() => FinalAssessment, { nullable: true, onDelete: 'SET NULL' })
   assessment: FinalAssessment;
 
-  @Column('float')
-  score: number;
+  @Column({type: 'float', nullable: true })
+  score: number | null;
 
-  @Column({ type: 'jsonb' })
-  response: any;
+
+  @Column({ type: 'jsonb' , nullable: true})
+  responses: {
+    questionId: string;
+    answerText: string;
+  }[];
+
+
+  @Column({ default: 'pending' })
+  status: 'pending' | 'graded';
 
   @CreateDateColumn()
   submittedAt: Date;

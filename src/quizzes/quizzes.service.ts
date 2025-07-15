@@ -25,7 +25,7 @@ export class QuizzesService {
 
     const quiz = this.quizRepo.create({
       title: data.title,
-      unlockAfter: data.unlockAfter,
+      unlockAfter: data.unlockAfter ?? 0,
       questions: data.questions,
       module,
     });

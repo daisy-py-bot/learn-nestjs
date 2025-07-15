@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { Course } from 'src/courses/course.entity';
+import { QuizQuestion } from 'src/quizzes/types';
 
 @Entity()
 export class FinalAssessment {
@@ -20,8 +21,15 @@ export class FinalAssessment {
   @Column()
   title: string;
 
+  
   @Column({ type: 'jsonb' })
-  questions: any;
+  questions: {
+    id: string;
+    prompt: string;
+    sampleAnswer: string;
+  }[];
+
+
 
   @Column('int')
   passingScore: number;

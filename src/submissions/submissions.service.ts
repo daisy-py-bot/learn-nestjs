@@ -2,11 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Submission } from './submission.entity';
-import { CreateSubmissionDto } from './dto/create-submission.dto';
-import { UpdateSubmissionDto } from './dto/update-submission.dto';
-import { User } from 'src/users/user.entity';
-import { Quiz } from 'src/quizzes/quiz.entity';
-import { FinalAssessment } from 'src/final-assessments/final-assessment.entity';
+import { User } from '../users/user.entity';
+import { Quiz } from '../quizzes/quiz.entity';
+import { FinalAssessment } from '../final-assessments/final-assessment.entity';
+import { CreateSubmissionDto } from './dto/create-submission.dto';[];
+import { UpdateSubmissionDto } from './dto/update-submission.dto';[];
+
 
 @Injectable()
 export class SubmissionsService {
@@ -24,7 +25,7 @@ export class SubmissionsService {
     private assessmentRepo: Repository<FinalAssessment>,
   ) {}
 
-  async create(data: CreateSubmissionDto) {
+  async submit(data: CreateSubmissionDto) {
     const user = await this.userRepo.findOne({ where: { id: data.userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -36,25 +37,34 @@ export class SubmissionsService {
       ? await this.assessmentRepo.findOne({ where: { id: data.assessmentId } })
       : null;
 
-
     const submission = this.submissionRepo.create({
-        user: { id: data.userId },
-        quiz: data.quizId ? { id: data.quizId } : undefined,
-        assessment: data.assessmentId ? { id: data.assessmentId } : undefined,
-        score: data.score,
-        response: data.response,
+      user: { id: data.userId },
+      quiz: quiz ?? undefined,
+      responses: data.responses,
+      score: null,
+      status: 'pending',
     });
 
+    const saved = await this.submissionRepo.save(submission);
 
-    return this.submissionRepo.save(submission);
+    return saved;
+  }
+
+  async grade(submissionId: string, score: number) {
+    const submission = await this.submissionRepo.findOne({ where: { id: submissionId } });
+    if (!submission) throw new NotFoundException('Submission not found');
+
+    submission.score = score;
+    submission.status = 'graded';
+    return await this.submissionRepo.save(submission);
   }
 
   findAll() {
-    return this.submissionRepo.find({ relations: ['user', 'quiz', 'assessment'] });
+    return this.submissionRepo.find({ relations: ['user', 'quiz'] });
   }
 
   findOne(id: string) {
-    return this.submissionRepo.findOne({ where: { id }, relations: ['user', 'quiz', 'assessment'] });
+    return this.submissionRepo.findOne({ where: { id }, relations: ['user', 'quiz'] });
   }
 
   async update(id: string, updates: UpdateSubmissionDto) {

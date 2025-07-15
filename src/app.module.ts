@@ -13,6 +13,7 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { BadgesModule } from './badges/badges.module';
 
 @Module({
   imports: [
@@ -39,7 +40,8 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
     EnrollmentsModule,
     SubmissionsModule,
     FeedbackModule,
-    ActivityLogsModule
+    ActivityLogsModule,
+    BadgesModule
 
   ],
 })

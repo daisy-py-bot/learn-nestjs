@@ -29,6 +29,8 @@ export class LessonsService {
       mediaUrl: data.mediaUrl,
       order: data.order,
       module: module,
+      resources: data.resources,
+      notes: data.notes,
     });
 
     return this.lessonRepo.save(lesson);
