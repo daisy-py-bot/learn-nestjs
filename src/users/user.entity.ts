@@ -2,10 +2,6 @@ import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToMany, Jo
 import { Badge } from 'src/badges/badge.entity';
 
 
-export enum UserRole{
-    LEARNER = 'learner',
-    ADMIN = 'admin',
-}
 
 export enum UserStatus{
     ACTIVE = 'active',
@@ -29,9 +25,6 @@ export class User{
 
     @Column()
     password: string;
-
-    @Column({type: 'enum', enum: UserRole, default: UserRole.LEARNER})
-    role: UserRole
 
     @Column({type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE})
     status: UserStatus

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
-import { UsersModule } from './users/users.module';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { UsersModule } from './users/users.module';
 import { User } from './users/user.entity';
 import { CoursesModule } from './courses/courses.module';
 import { ModulesModule } from './modules/modules.module';
@@ -14,22 +16,31 @@ import { SubmissionsModule } from './submissions/submissions.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { BadgesModule } from './badges/badges.module';
+import { AdminModule } from './admin/admin.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    UsersModule,
+    // Load .env globally
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    // Use environment variables in TypeORM config
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'daisy',
-      database: '_uncommon',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: true,
       entities: [__dirname + '/**/*.entity.{ts,js}'],
-
     }),
+
+    // Feature modules
+    UsersModule,
     CoursesModule,
     ModulesModule,
     LessonsModule,
@@ -41,8 +52,9 @@ import { BadgesModule } from './badges/badges.module';
     SubmissionsModule,
     FeedbackModule,
     ActivityLogsModule,
-    BadgesModule
-
+    BadgesModule,
+    AdminModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

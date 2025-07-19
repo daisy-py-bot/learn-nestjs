@@ -24,5 +24,13 @@ export class UsersService {
         return this.userRepo.findOne({where: {id}})
     }
 
+    findByEmail(email: string){
+        return this.userRepo.findOne({where: {email}})
+    }
+
+    async updateLastLogin(id: string) {
+        return this.userRepo.update(id, { lastlogin: new Date() });
+    }
+
 
 }
