@@ -29,6 +29,12 @@ export class User{
     @Column({type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE})
     status: UserStatus
 
+    @Column({ nullable: true })
+    tagline?: string;
+
+    @Column({ nullable: true })
+    avatarUrl?: string;
+
     @CreateDateColumn()
     createdAt: Date;
 

@@ -32,6 +32,9 @@ export class Enrollment {
   })
   status: EnrollmentStatus;
 
+  @Column({ default: false })
+  certificateIssued: boolean;
+
   @CreateDateColumn()
   startedAt: Date;
 

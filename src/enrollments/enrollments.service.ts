@@ -56,6 +56,10 @@ export class EnrollmentsService {
     return this.enrollRepo.findOne({ where: { id } });
   }
 
+  findByUser(userId: string) {
+    return this.enrollRepo.find({ where: { user: { id: userId } } });
+  }
+
   async update(id: string, updates: UpdateEnrollmentDto) {
     const enrollment = await this.enrollRepo.findOne({ where: { id } });
     if (!enrollment) throw new NotFoundException('Enrollment not found');

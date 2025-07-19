@@ -11,5 +11,6 @@ import { BadgesModule } from 'src/badges/badges.module';
   imports: [TypeOrmModule.forFeature([Enrollment, User, Course]), BadgesModule],
   providers: [EnrollmentsService],
   controllers: [EnrollmentsController],
+  exports: [EnrollmentsService],
 })
 export class EnrollmentsModule {}

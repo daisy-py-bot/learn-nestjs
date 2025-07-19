@@ -64,6 +64,10 @@ export class CoursesService {
     return this.courseRepo.remove(course);
   }
 
+  findRecommendedForUser(userId: string) {
+    // For now, recommend all published courses
+    return this.courseRepo.find({ where: { isPublished: true } });
+  }
 
 
 }

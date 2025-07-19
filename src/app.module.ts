@@ -18,6 +18,7 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { BadgesModule } from './badges/badges.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { AuthModule } from './auth/auth.module';
     BadgesModule,
     AdminModule,
     AuthModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
