@@ -28,6 +28,9 @@ export class Module {
   @Column('int')
   order: number;
 
+  @Column('int', { nullable: true })
+  duration?: number; // duration in minutes
+
   @CreateDateColumn()
   createdAt: Date;
 

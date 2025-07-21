@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsInt, IsUUID, IsOptional, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsString, IsInt, IsUUID, IsOptional, IsUrl, IsArray } from 'class-validator';
 
 export class CreateLessonDto {
   @IsUUID()
@@ -15,14 +15,30 @@ export class CreateLessonDto {
   @IsUrl()
   mediaUrl?: string;
 
+  @IsOptional()
+  @IsUrl()
+  videoUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  transcript?: Array<{ timestamp: string; text: string }>;
+
+  @IsOptional()
+  @IsArray()
+  notes?: Array<{ title: string; content: string }>;
+
+  @IsOptional()
+  @IsArray()
+  resources?: Array<{ title: string; description: string; url: string; type: string }>;
+
   @IsInt()
   order: number;
 
   @IsOptional()
-  @IsString()
-  resources?: string;
+  @IsInt()
+  duration?: number;
 
   @IsOptional()
   @IsString()
-  notes?: string;
+  type?: string;
 }

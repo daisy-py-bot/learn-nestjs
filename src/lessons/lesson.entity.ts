@@ -24,14 +24,26 @@ export class Lesson {
   @Column({ nullable: true })
   mediaUrl?: string;
 
+  @Column({ type: 'text', nullable: true })
+  videoUrl?: string;
+
+  @Column({ type: 'json', nullable: true })
+  transcript?: Array<{ timestamp: string; text: string }>;
+
+  @Column({ type: 'json', nullable: true })
+  notes?: Array<{ title: string; content: string }>;
+
+  @Column({ type: 'json', nullable: true })
+  resources?: Array<{ title: string; description: string; url: string; type: string }>;
+
+  @Column('int', { nullable: true })
+  duration?: number; // duration in minutes
+
+  @Column({ type: 'text', nullable: true })
+  type?: string; // e.g., 'video', 'quiz', 'reading'
+
   @Column('int')
   order: number;
-
-  @Column({type:'text', nullable: true}) // optional additional resources for the lesson
-  resources: string;
-
-  @Column({type: 'text', nullable: true}) // optional notes on the lesson
-  notes: string;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -36,6 +36,7 @@ export class DashboardService {
 
     return {
       user: {
+        id: user.id,
         name: user.firstname,
         tagline: user.tagline || '',
         avatar: user.avatarUrl || '',

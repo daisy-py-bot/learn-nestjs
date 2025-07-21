@@ -1,7 +1,8 @@
-import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne} from 'typeorm'
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, ManyToMany, JoinTable, OneToMany} from 'typeorm'
 import { User } from 'src/users/user.entity'
 import { Module } from 'src/modules/module.entity';
-import { OneToMany } from 'typeorm';
+import { Badge } from 'src/badges/badge.entity';
+import { Certificate } from 'src/certificates/certificate.entity';
 import { FinalAssessment } from 'src/final-assessments/final-assessment.entity';
 
 export enum CourseCategory{
@@ -49,21 +50,29 @@ export class Course{
     @ManyToOne( () => Course, {nullable: true})
     prerequisites: Course;
 
-    @Column('text', {array: true, nullable:  true})
-    tags: string[];
+    @Column('text', { array: true, nullable: true })
+    objectives: string[];
+
+    @Column('text', { array: true, nullable: true })
+    searchTags: string[];
+
+    @Column('text', { array: true, nullable: true })
+    badgeNames: string[];
 
     @Column({type: 'enum', enum: CourseLevel, default: CourseLevel.BEGINNER})
     level: CourseLevel
 
-    @CreateDateColumn()
-    createdAt: Date;
+    @ManyToMany(() => Badge)
+    @JoinTable()
+    badges: Badge[];
 
-    @OneToMany( () => Module, (module) => module.course)
-    modules: Module[];
+    @ManyToOne(() => Certificate, { nullable: true })
+    certificate?: Certificate;
 
-    @OneToMany(() => FinalAssessment, (assessment) => assessment.course)
+    @OneToMany(() => FinalAssessment, (fa) => fa.course)
     finalAssessments: FinalAssessment[];
 
-
+    @OneToMany(() => Module, (module) => module.course)
+    modules: Module[];
 
 }

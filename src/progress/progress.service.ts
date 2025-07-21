@@ -6,6 +6,7 @@ import { CreateProgressDto } from './dto/create-progress.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
 import { User } from 'src/users/user.entity';
 import { Lesson } from 'src/lessons/lesson.entity';
+import { Course } from 'src/courses/course.entity';
 
 @Injectable()
 export class ProgressService {
@@ -18,6 +19,9 @@ export class ProgressService {
 
     @InjectRepository(Lesson)
     private lessonRepo: Repository<Lesson>,
+
+    @InjectRepository(Course)
+    private courseRepo: Repository<Course>,
   ) {}
 
   async createOrUpdateProgress(dto: CreateProgressDto) {
@@ -72,5 +76,69 @@ export class ProgressService {
     }
 
     return this.progressRepo.save(progress);
+  }
+
+  async trackLessonAccess(userId: string, courseId: string, lessonId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const course = await this.courseRepo.findOne({ where: { id: courseId } });
+    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
+
+    if (!user || !course || !lesson) {
+      throw new NotFoundException('User, Course, or Lesson not found');
+    }
+
+    let progress = await this.progressRepo.findOne({
+      where: { 
+        user: { id: userId }, 
+        course: { id: courseId },
+        lesson: { id: lessonId } 
+      },
+    });
+
+    if (progress) {
+      progress.lastAccessedAt = new Date();
+      progress.lastVisitedAt = new Date();
+    } else {
+      const progressData: DeepPartial<Progress> = {
+        user: { id: userId },
+        course: { id: courseId },
+        lesson: { id: lessonId },
+        lastAccessedAt: new Date(),
+        isCompleted: false,
+      };
+      progress = this.progressRepo.create(progressData);
+    }
+
+    return this.progressRepo.save(progress);
+  }
+
+  async getCurrentLessonForCourse(userId: string, courseId: string) {
+    const lastAccessedProgress = await this.progressRepo.findOne({
+      where: { 
+        user: { id: userId }, 
+        course: { id: courseId } 
+      },
+      order: { lastAccessedAt: 'DESC' },
+      relations: ['lesson'],
+    });
+
+    return lastAccessedProgress?.lesson || null;
+  }
+
+  async getCourseProgress(userId: string, courseId: string) {
+    const progressRecords = await this.progressRepo.find({
+      where: { 
+        user: { id: userId }, 
+        course: { id: courseId } 
+      },
+      relations: ['lesson'],
+    });
+
+    return progressRecords.map(record => ({
+      lessonId: record.lesson.id,
+      isCompleted: record.isCompleted,
+      lastAccessedAt: record.lastAccessedAt,
+      completedAt: record.completedAt,
+    }));
   }
 }

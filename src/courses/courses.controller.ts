@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Patch, Delete} from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Patch, Delete, Query} from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -17,9 +17,28 @@ export class CoursesController {
     return this.coursesService.findAll();
   }
 
+  @Get('catalog')
+  getCatalog() {
+    return this.coursesService.getCourseCatalog();
+  }
+
+  @Get('search/by-badge')
+  findCoursesByBadge(@Query('badgeName') badgeName: string) {
+    return this.coursesService.findCoursesByBadgeName(badgeName);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id);
+  }
+
+  @Get(':id/content')
+  getCourseContent(
+    @Param('id') id: string, 
+    @Query('userId') userId?: string,
+    @Query('currentLessonId') currentLessonId?: string
+  ) {
+    return this.coursesService.getCourseContent(id, userId, currentLessonId);
   }
 
   @Patch(':id')

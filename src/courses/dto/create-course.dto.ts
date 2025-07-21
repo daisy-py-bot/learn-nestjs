@@ -17,4 +17,9 @@ export class CreateCourseDto {
 
   @IsNotEmpty()
   createdById: string; // link to the User (admin)
+
+  objectives?: string[];
+  searchTags?: string[];
+  badgeNames?: string[];
+  badgeIds?: string[];
 }

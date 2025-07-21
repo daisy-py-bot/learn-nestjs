@@ -22,6 +22,9 @@ export class Certificate {
   @CreateDateColumn()
   issuedAt: Date;
 
+  @Column({ default: 'Certificate of Completion' })
+  title: string;
+
   @Column()
   certificateUrl: string;
 }
