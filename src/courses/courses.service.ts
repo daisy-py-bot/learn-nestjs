@@ -253,7 +253,27 @@ export class CoursesService {
   }
 
   async findCoursesByCategory(category: string) {
+    if (category === CourseCategory.ALL) {
+      return this.courseRepo.find({ relations: ['createdBy'] });
+    }
     return this.courseRepo.find({ where: { category: category as CourseCategory }, relations: ['createdBy'] });
+  }
+
+  async findMostPopularCourses(limit = 3) {
+    const result = await this.courseRepo
+      .createQueryBuilder('course')
+      .leftJoin('enrollment', 'enrollment', 'enrollment.courseId = course.id')
+      .addSelect('COUNT(enrollment.id)', 'enrollmentCount')
+      .groupBy('course.id')
+      .orderBy('enrollmentCount', 'DESC')
+      .limit(limit)
+      .getRawAndEntities();
+
+    // Combine course entity and enrollment count
+    return result.entities.map((course, idx) => ({
+      ...course,
+      enrollmentCount: parseInt(result.raw[idx].enrollmentCount, 10) || 0,
+    }));
   }
 
   // Public method for dashboard to get user progress for a course
