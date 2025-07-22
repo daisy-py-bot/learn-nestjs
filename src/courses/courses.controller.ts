@@ -37,6 +37,11 @@ export class CoursesController {
     return this.coursesService.findMostPopularCourses();
   }
 
+  @Get('search')
+  searchCourses(@Query('q') query: string) {
+    return this.coursesService.searchCourses(query);
+  }
+
   @Get('categories')
   getCategories() {
     // Return all course categories as an array

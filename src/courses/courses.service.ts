@@ -265,7 +265,7 @@ export class CoursesService {
       .leftJoin('enrollment', 'enrollment', 'enrollment.courseId = course.id')
       .addSelect('COUNT(enrollment.id)', 'enrollmentCount')
       .groupBy('course.id')
-      .orderBy('enrollmentCount', 'DESC')
+      .orderBy('"enrollmentCount"', 'DESC') // fixed alias quoting
       .limit(limit)
       .getRawAndEntities();
 
@@ -274,6 +274,18 @@ export class CoursesService {
       ...course,
       enrollmentCount: parseInt(result.raw[idx].enrollmentCount, 10) || 0,
     }));
+  }
+
+  async searchCourses(query: string) {
+    if (!query) return [];
+    const q = `%${query}%`;
+    return this.courseRepo.createQueryBuilder('course')
+      .where('course.title ILIKE :q', { q })
+      .orWhere('course.description ILIKE :q', { q })
+      .orWhere(`EXISTS (
+        SELECT 1 FROM unnest(course.searchTags) AS tag WHERE tag ILIKE :q
+      )`, { q })
+      .getMany();
   }
 
   // Public method for dashboard to get user progress for a course
