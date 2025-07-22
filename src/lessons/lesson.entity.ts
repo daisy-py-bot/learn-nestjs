@@ -7,6 +7,14 @@ import {
 } from 'typeorm';
 import { Module } from 'src/modules/module.entity';
 
+export enum LessonType {
+  VIDEO = 'video',
+  READING = 'reading',
+  QUIZ = 'quiz',
+  PDF = 'pdf',
+  DOC = 'doc',
+}
+
 @Entity()
 export class Lesson {
   @PrimaryGeneratedColumn('uuid')
@@ -39,8 +47,8 @@ export class Lesson {
   @Column('int', { nullable: true })
   duration?: number; // duration in minutes
 
-  @Column({ type: 'text', nullable: true })
-  type?: string; // e.g., 'video', 'quiz', 'reading'
+  @Column({ type: 'enum', enum: LessonType, default: LessonType.VIDEO })
+  type: LessonType;
 
   @Column('int')
   order: number;

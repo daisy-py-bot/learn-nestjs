@@ -27,6 +27,17 @@ export class CoursesController {
     return this.coursesService.findCoursesByBadgeName(badgeName);
   }
 
+  @Get('search/by-category')
+  findCoursesByCategory(@Query('category') category: string) {
+    return this.coursesService.findCoursesByCategory(category);
+  }
+
+  @Get('categories')
+  getCategories() {
+    // Return all course categories as an array
+    return Object.values(require('./course.entity').CourseCategory);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id);

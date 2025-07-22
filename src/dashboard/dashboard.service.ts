@@ -34,6 +34,44 @@ export class DashboardService {
     // Recommended courses — for now fetch some random or popular courses
     const recommendedCourses = await this.coursesService.findRecommendedForUser(userId);
 
+    // Ongoing courses with progress
+    const ongoingCourses: any[] = [];
+    for (const e of enrollments.filter(e => e.status !== 'completed')) {
+      // Fetch course with modules and lessons
+      const courseWithModules = await this.coursesService['courseRepo'].findOne({
+        where: { id: e.course.id },
+        relations: ['modules', 'modules.lessons'],
+      });
+      if (!courseWithModules) {
+        ongoingCourses.push({ ...e, progress: 0, resumeLessonId: null });
+        continue;
+      }
+      // Get completed lessons for user in this course
+      const userProgress = await this.coursesService.getCourseProgressForDashboard(userId, e.course.id);
+      const completedLessonIds = userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId);
+      // Flatten all lessons by module order, then lesson order
+      const modules = (courseWithModules.modules || []).slice().sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+      let resumeLessonId: string | null = null;
+      outer: for (const mod of modules) {
+        const lessons = (mod.lessons || []).slice().sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+        for (const lesson of lessons) {
+          if (!completedLessonIds.includes(lesson.id)) {
+            resumeLessonId = lesson.id;
+            break outer;
+          }
+        }
+      }
+      // Flatten all lessons for progress calculation
+      const allLessons = modules.flatMap((m: any) => (m.lessons || []));
+      const totalMinutes = allLessons.reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
+      const completedMinutes = allLessons.filter((l: any) => completedLessonIds.includes(l.id)).reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
+      ongoingCourses.push({
+        ...e,
+        progress: totalMinutes > 0 ? completedMinutes / totalMinutes : 0,
+        resumeLessonId,
+      });
+    }
+
     return {
       user: {
         id: user.id,
@@ -50,7 +88,7 @@ export class DashboardService {
       completedCourses,
       badges,
       recommendedCourses,
-      ongoingCourses: enrollments.filter(e => e.status !== 'completed'),
+      ongoingCourses,
     };
   }
 }

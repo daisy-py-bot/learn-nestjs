@@ -1,29 +1,20 @@
-import { Controller, Post, Patch, Get, Param, Body } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { CreateProgressDto } from './dto/create-progress.dto';
-import { UpdateProgressDto } from './dto/update-progress.dto';
 
 @Controller('progress')
 export class ProgressController {
-  constructor(private readonly service: ProgressService) {}
+  constructor(private readonly progressService: ProgressService) {}
 
+  // Track lesson access (called when user views a lesson)
+  @Post('track')
+  async trackLessonAccess(@Body() body: { userId: string; courseId: string; lessonId: string }) {
+    return this.progressService.trackLessonAccess(body.userId, body.courseId, body.lessonId);
+  }
+
+  // Mark lesson as complete (or update progress)
   @Post()
-  createOrUpdate(@Body() dto: CreateProgressDto) {
-    return this.service.createOrUpdateProgress(dto);
-  }
-
-  @Get('user/:userId')
-  getAllForUser(@Param('userId') userId: string) {
-    return this.service.findAllForUser(userId);
-  }
-
-  @Get('user/:userId/completed')
-  getCompletedLessons(@Param('userId') userId: string) {
-    return this.service.findCompletedLessons(userId);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProgressDto) {
-    return this.service.update(id, dto);
+  async createOrUpdateProgress(@Body() dto: CreateProgressDto) {
+    return this.progressService.createOrUpdateProgress(dto);
   }
 }

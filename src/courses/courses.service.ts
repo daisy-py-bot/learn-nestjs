@@ -8,6 +8,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { getRepository } from 'typeorm';
 import { ProgressService } from 'src/progress/progress.service';
 import { Badge } from 'src/badges/badge.entity';
+import { CourseCategory } from './course.entity';
 
 @Injectable()
 export class CoursesService {
@@ -29,6 +30,8 @@ export class CoursesService {
     let badges: Badge[] = [];
     if (data.badgeIds && data.badgeIds.length > 0) {
       badges = await this.courseRepo.manager.getRepository(Badge).findByIds(data.badgeIds);
+    } else if (data.badgeNames && data.badgeNames.length > 0) {
+      badges = await this.getBadgesByNames(data.badgeNames);
     }
 
     const course = this.courseRepo.create({
@@ -112,6 +115,13 @@ export class CoursesService {
     });
   }
 
+  private async getBadgesByNames(badgeNames: string[]): Promise<Badge[]> {
+    if (!badgeNames || badgeNames.length === 0) return [];
+    return this.courseRepo.manager.getRepository(Badge).find({
+      where: badgeNames.map(name => ({ name })),
+    });
+  }
+
   async getCourseContent(courseId: string, userId?: string, currentLessonId?: string) {
     const course = await this.courseRepo.findOne({
       where: { id: courseId },
@@ -148,7 +158,7 @@ export class CoursesService {
             id: lesson.id,
             title: lesson.title,
             duration: lesson.duration ? `${lesson.duration} min` : '0 min',
-            videoUrl: lesson.videoUrl || lesson.mediaUrl || '/placeholder.svg?height=400&width=800',
+            videoUrl: lesson.mediaUrl || lesson.videoUrl ||  '/placeholder.svg?height=400&width=800',
             transcript: lesson.transcript || [
               {
                 timestamp: "0:00",
@@ -182,23 +192,30 @@ export class CoursesService {
     }
 
     // Map modules with progress information
-    const modules = course.modules.map((mod) => ({
-      id: mod.id,
-      title: mod.title,
-      duration: mod.duration ? `${mod.duration} min` : '0 min',
-      locked: false, // You can add logic for locking based on prerequisites
-      lessons: (mod.lessons || []).map((lesson) => {
-        const progress = userProgress.find(p => p.lessonId === lesson.id);
-        return {
-          id: lesson.id,
-          title: lesson.title,
-          duration: lesson.duration ? `${lesson.duration} min` : '0 min',
-          type: lesson.type || 'video',
-          completed: progress?.isCompleted || false,
-          current: lesson.id === currentLessonIdToUse,
-        };
-      }),
-    }));
+    const modules = course.modules.map((mod) => {
+      // Calculate total duration from lessons
+      const totalLessonDuration = (mod.lessons || []).reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+      return {
+        id: mod.id,
+        title: mod.title,
+        duration: totalLessonDuration ? `${totalLessonDuration} min` : '0 min',
+        locked: false, // You can add logic for locking based on prerequisites
+        lessons: (mod.lessons || []).map((lesson) => {
+          const progress = userProgress.find(p => p.lessonId === lesson.id);
+          return {
+            id: lesson.id,
+            title: lesson.title,
+            duration: lesson.duration ? `${lesson.duration} min` : '0 min',
+            type: lesson.type || 'video',
+            completed: progress?.isCompleted || false,
+            current: lesson.id === currentLessonIdToUse,
+          };
+        }),
+      };
+    });
+
+    // Fetch badges by badgeNames
+    const badges = await this.getBadgesByNames(course.badgeNames || []);
 
     return {
       id: course.id,
@@ -215,15 +232,14 @@ export class CoursesService {
         bio: course.createdBy.bio || '',
       } : null,
       rewards: {
-        // badge: course.badges && course.badges.length > 0 ? course.badges[0].name : '',
         certificate: course.certificate ? course.certificate.title : '',
         challenges: course.finalAssessments ? course.finalAssessments.length : 0,
-        badges: course.badges ? course.badges.map(b => ({
+        badges: badges.map(b => ({
           id: b.id,
           name: b.name,
           description: b.description,
           iconUrl: b.iconUrl,
-        })) : [],
+        })),
       },
     };
   }
@@ -234,6 +250,15 @@ export class CoursesService {
       .leftJoinAndSelect('course.badges', 'badge')
       .where('badge.name = :badgeName', { badgeName })
       .getMany();
+  }
+
+  async findCoursesByCategory(category: string) {
+    return this.courseRepo.find({ where: { category: category as CourseCategory }, relations: ['createdBy'] });
+  }
+
+  // Public method for dashboard to get user progress for a course
+  async getCourseProgressForDashboard(userId: string, courseId: string) {
+    return this.progressService.getCourseProgress(userId, courseId);
   }
 
 
