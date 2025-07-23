@@ -23,7 +23,7 @@ export class DashboardService {
 
     // Calculate total courses, total hours, completed courses, etc
     const totalCourses = enrollments.length;
-    const totalHours = enrollments.reduce((sum, e) => sum + (e.course.duration || 0), 0);
+    const totalHours = Math.round((enrollments.reduce((sum, e) => sum + (e.course.duration || 0), 0) / 60) * 10) / 10;
 
     // Completed courses
     const completedCourses = enrollments.filter(e => e.status === 'completed').map(e => ({ ...e, completed: true }));
@@ -32,7 +32,10 @@ export class DashboardService {
     const badges = await this.badgesService.getUserBadges(userId);
 
     // Recommended courses — for now fetch some random or popular courses
-    const recommendedCourses = await this.coursesService.findRecommendedForUser(userId);
+    let recommendedCourses = await this.coursesService.findRecommendedForUser(userId);
+    // Exclude courses the user is already enrolled in
+    const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));
+    recommendedCourses = recommendedCourses.filter(c => !enrolledCourseIds.has(c.id));
 
     // Ongoing courses with progress
     const ongoingCourses: any[] = [];
@@ -40,7 +43,7 @@ export class DashboardService {
       // Fetch course with modules and lessons
       const courseWithModules = await this.coursesService['courseRepo'].findOne({
         where: { id: e.course.id },
-        relations: ['modules', 'modules.lessons'],
+        relations: ['modules', 'modules.lessons', 'modules.quizzes', 'finalAssessments'],
       });
       if (!courseWithModules) {
         ongoingCourses.push({ ...e, progress: 0, resumeLessonId: null, completed: false });
@@ -63,8 +66,28 @@ export class DashboardService {
       }
       // Flatten all lessons for progress calculation
       const allLessons = modules.flatMap((m: any) => (m.lessons || []));
-      const totalMinutes = allLessons.reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
-      const completedMinutes = allLessons.filter((l: any) => completedLessonIds.includes(l.id)).reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
+      const allQuizzes = modules.flatMap((m: any) => (m.quizzes || []));
+      const allFinalAssessments = courseWithModules.finalAssessments || [];
+
+      // Lessons
+      const totalLessonMinutes = allLessons.reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
+      const completedLessonMinutes = allLessons.filter((l: any) => completedLessonIds.includes(l.id)).reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
+
+      // Quizzes
+      const quizSubmissionRepo = this.coursesService['quizzesService']['quizSubmissionRepo'];
+      const completedQuizIds = (await quizSubmissionRepo.find({ where: { user: { id: userId } } })).map((s: any) => s.quiz.id);
+      const totalQuizMinutes = allQuizzes.reduce((sum: number, q: any) => sum + (q.duration || 0), 0);
+      const completedQuizMinutes = allQuizzes.filter((q: any) => completedQuizIds.includes(q.id)).reduce((sum: number, q: any) => sum + (q.duration || 0), 0);
+
+      // Final Assessments
+      const finalAssessmentSubmissionRepo = this.coursesService['finalAssessmentsService']['submissionRepo'];
+      const completedFinalAssessmentIds = (await finalAssessmentSubmissionRepo.find({ where: { user: { id: userId } } })).map((s: any) => s.assessment.id);
+      const totalFinalAssessmentMinutes = allFinalAssessments.reduce((sum: number, fa: any) => sum + (fa.duration || 0), 0);
+      const completedFinalAssessmentMinutes = allFinalAssessments.filter((fa: any) => completedFinalAssessmentIds.includes(fa.id)).reduce((sum: number, fa: any) => sum + (fa.duration || 0), 0);
+
+      const totalMinutes = totalLessonMinutes + totalQuizMinutes + totalFinalAssessmentMinutes;
+      const completedMinutes = completedLessonMinutes + completedQuizMinutes + completedFinalAssessmentMinutes;
+
       ongoingCourses.push({
         ...e,
         progress: totalMinutes > 0 ? completedMinutes / totalMinutes : 0,
@@ -88,7 +111,7 @@ export class DashboardService {
       },
       completedCourses,
       badges,
-      recommendedCourses: recommendedCourses.map(rc => ({ ...rc, completed: !!enrollments.find(e => e.course.id === rc.id && e.status === 'completed') })),
+      recommendedCourses: recommendedCourses.length > 0 ? recommendedCourses.map(rc => ({ ...rc, completed: false })) : [],
       ongoingCourses,
     };
   }

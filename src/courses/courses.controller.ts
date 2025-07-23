@@ -22,24 +22,29 @@ export class CoursesController {
     return this.coursesService.getCourseCatalog();
   }
 
+  @Get('catalog/available')
+  getAvailableCatalog(@Query('userId') userId: string) {
+    return this.coursesService.getCourseCatalog(userId);
+  }
+
   @Get('search/by-badge')
-  findCoursesByBadge(@Query('badgeName') badgeName: string) {
-    return this.coursesService.findCoursesByBadgeName(badgeName);
+  findCoursesByBadge(@Query('badgeName') badgeName: string, @Query('userId') userId?: string) {
+    return this.coursesService.findCoursesByBadgeName(badgeName, userId);
   }
 
   @Get('search/by-category')
-  findCoursesByCategory(@Query('category') category: string) {
-    return this.coursesService.findCoursesByCategory(category);
+  findCoursesByCategory(@Query('category') category: string, @Query('userId') userId?: string) {
+    return this.coursesService.findCoursesByCategory(category, userId);
   }
 
   @Get('search/most-popular')
-  findMostPopularCourses() {
-    return this.coursesService.findMostPopularCourses();
+  findMostPopularCourses(@Query('userId') userId?: string) {
+    return this.coursesService.findMostPopularCourses(userId);
   }
 
   @Get('search')
-  searchCourses(@Query('q') query: string) {
-    return this.coursesService.searchCourses(query);
+  searchCourses(@Query('q') query: string, @Query('userId') userId?: string) {
+    return this.coursesService.searchCourses(query, userId);
   }
 
   @Get('categories')

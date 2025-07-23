@@ -97,9 +97,15 @@ export class CoursesService {
     return this.courseRepo.find({ where: { isPublished: true } });
   }
 
-  async getCourseCatalog() {
+  async getCourseCatalog(userId?: string) {
     // Use query builder to join modules and lessons
-    const courses = await this.courseRepo.find({ relations: ['modules', 'modules.lessons'] });
+    let courses = await this.courseRepo.find({ relations: ['modules', 'modules.lessons'] });
+    if (userId) {
+      // Get enrolled course IDs for the user
+      const enrollments = await this.enrollmentsService.findByUser(userId);
+      const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));
+      courses = courses.filter(course => !enrolledCourseIds.has(course.id));
+    }
     return courses.map((course) => {
       // Count total lessons across all modules
       let totalLessons = 0;
@@ -289,22 +295,36 @@ export class CoursesService {
     };
   }
 
-  async findCoursesByBadgeName(badgeName: string) {
-    return this.courseRepo
+  async findCoursesByBadgeName(badgeName: string, userId?: string) {
+    let courses = await this.courseRepo
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.badges', 'badge')
       .where('badge.name = :badgeName', { badgeName })
       .getMany();
-  }
-
-  async findCoursesByCategory(category: string) {
-    if (category === CourseCategory.ALL) {
-      return this.courseRepo.find({ relations: ['createdBy'] });
+    if (userId) {
+      const enrollments = await this.enrollmentsService.findByUser(userId);
+      const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));
+      courses = courses.filter(course => !enrolledCourseIds.has(course.id));
     }
-    return this.courseRepo.find({ where: { category: category as CourseCategory }, relations: ['createdBy'] });
+    return courses;
   }
 
-  async findMostPopularCourses(limit = 3) {
+  async findCoursesByCategory(category: string, userId?: string) {
+    let courses;
+    if (category === CourseCategory.ALL) {
+      courses = await this.courseRepo.find({ relations: ['createdBy'] });
+    } else {
+      courses = await this.courseRepo.find({ where: { category: category as CourseCategory }, relations: ['createdBy'] });
+    }
+    if (userId) {
+      const enrollments = await this.enrollmentsService.findByUser(userId);
+      const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));
+      courses = courses.filter(course => !enrolledCourseIds.has(course.id));
+    }
+    return courses;
+  }
+
+  async findMostPopularCourses(userId?: string, limit = 3) {
     const result = await this.courseRepo
       .createQueryBuilder('course')
       .leftJoin('enrollment', 'enrollment', 'enrollment.courseId = course.id')
@@ -313,24 +333,34 @@ export class CoursesService {
       .orderBy('"enrollmentCount"', 'DESC') // fixed alias quoting
       .limit(limit)
       .getRawAndEntities();
-
-    // Combine course entity and enrollment count
-    return result.entities.map((course, idx) => ({
+    let courses = result.entities.map((course, idx) => ({
       ...course,
       enrollmentCount: parseInt(result.raw[idx].enrollmentCount, 10) || 0,
     }));
+    if (userId) {
+      const enrollments = await this.enrollmentsService.findByUser(userId);
+      const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));
+      courses = courses.filter(course => !enrolledCourseIds.has(course.id));
+    }
+    return courses;
   }
 
-  async searchCourses(query: string) {
+  async searchCourses(query: string, userId?: string) {
     if (!query) return [];
     const q = `%${query}%`;
-    return this.courseRepo.createQueryBuilder('course')
+    let courses = await this.courseRepo.createQueryBuilder('course')
       .where('course.title ILIKE :q', { q })
       .orWhere('course.description ILIKE :q', { q })
       .orWhere(`EXISTS (
         SELECT 1 FROM unnest(course.searchTags) AS tag WHERE tag ILIKE :q
       )`, { q })
       .getMany();
+    if (userId) {
+      const enrollments = await this.enrollmentsService.findByUser(userId);
+      const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));
+      courses = courses.filter(course => !enrolledCourseIds.has(course.id));
+    }
+    return courses;
   }
 
   // Public method for dashboard to get user progress for a course
