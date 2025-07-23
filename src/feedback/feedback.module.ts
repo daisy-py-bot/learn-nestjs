@@ -10,5 +10,6 @@ import { Course } from 'src/courses/course.entity';
   imports: [TypeOrmModule.forFeature([Feedback, User, Course])],
   controllers: [FeedbackController],
   providers: [FeedbackService],
+  exports: [FeedbackService],
 })
 export class FeedbackModule {}

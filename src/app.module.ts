@@ -14,11 +14,13 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { FeedbackService } from './feedback/feedback.service';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { BadgesModule } from './badges/badges.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { HomeController } from './home.controller';
 
 @Module({
   imports: [
@@ -58,5 +60,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     DashboardModule,
   ],
+  controllers: [HomeController],
 })
 export class AppModule {}

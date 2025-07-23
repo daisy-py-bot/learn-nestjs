@@ -52,7 +52,7 @@ export class CoursesService {
   }
 
   findAll() {
-    return this.courseRepo.find({ relations: ['createdBy'] });
+    return this.courseRepo.find({ relations: ['modules', 'modules.lessons', 'createdBy'] });
   }
 
   findOne(id: string) {
@@ -315,7 +315,7 @@ export class CoursesService {
       courses = await this.courseRepo.find({ relations: ['createdBy'] });
     } else {
       courses = await this.courseRepo.find({ where: { category: category as CourseCategory }, relations: ['createdBy'] });
-    }
+  }
     if (userId) {
       const enrollments = await this.enrollmentsService.findByUser(userId);
       const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));
