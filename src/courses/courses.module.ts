@@ -7,9 +7,11 @@ import { User } from 'src/users/user.entity';
 import { ProgressModule } from 'src/progress/progress.module';
 import { QuizzesModule } from 'src/quizzes/quizzes.module';
 import { FinalAssessmentsModule } from 'src/final-assessments/final-assessments.module';
+import { CertificatesModule } from 'src/certificates/certificates.module';
+import { EnrollmentsModule } from 'src/enrollments/enrollments.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Course, User]), ProgressModule, QuizzesModule, FinalAssessmentsModule],
+  imports: [TypeOrmModule.forFeature([Course, User]), ProgressModule, QuizzesModule, FinalAssessmentsModule, CertificatesModule, EnrollmentsModule],
   providers: [CoursesService],
   controllers: [CoursesController],
   exports: [CoursesService],

@@ -11,9 +11,42 @@ export class CertificatesController {
     return this.certService.issueCertificate(dto);
   }
 
+  @Post('generate')
+  async generateCertificate(@Body() dto: { userId: string; courseId: string }) {
+    // Generate a dummy certificate URL
+    const certificateUrl = `https://dummy-certs.com/certificate/${dto.userId}-${dto.courseId}`;
+    const cert = await this.certService.issueCertificate({
+      userId: dto.userId,
+      courseId: dto.courseId,
+      certificateUrl,
+    });
+    return cert;
+  }
+
   @Get(':userId')
   findAllForUser(@Param('userId') userId: string) {
     return this.certService.findAllForUser(userId);
+  }
+
+  @Get('by-user-course/:userId/:courseId')
+  async findByUserAndCourse(@Param('userId') userId: string, @Param('courseId') courseId: string) {
+    const cert = await this.certService.findByUserAndCourse(userId, courseId);
+    const { user } = cert;
+    return {
+      certificateUrl: cert.certificateUrl,
+      user: {
+        id: user.id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        bio: user.bio,
+        tagline: user.tagline,
+        status: user.status,
+        createdAt: user.createdAt,
+        lastlogin: user.lastlogin,
+      }
+    };
   }
 
   @Delete(':id')

@@ -72,8 +72,8 @@ export class Course{
     @JoinTable()
     badges: Badge[];
 
-    @ManyToOne(() => Certificate, { nullable: true })
-    certificate?: Certificate;
+    @Column({ default: false })
+    hasCertificate: boolean;
 
     @OneToMany(() => FinalAssessment, (fa) => fa.course)
     finalAssessments: FinalAssessment[];

@@ -11,6 +11,8 @@ import { Badge } from 'src/badges/badge.entity';
 import { CourseCategory } from './course.entity';
 import { QuizzesService } from 'src/quizzes/quizzes.service';
 import { FinalAssessmentsService } from 'src/final-assessments/final-assessments.service';
+import { EnrollmentsService } from 'src/enrollments/enrollments.service';
+import { EnrollmentStatus } from 'src/enrollments/enrollment.entity';
 
 @Injectable()
 export class CoursesService {
@@ -22,6 +24,7 @@ export class CoursesService {
     private progressService: ProgressService,
     private quizzesService: QuizzesService,
     private finalAssessmentsService: FinalAssessmentsService,
+    private enrollmentsService: EnrollmentsService,
   ) {}
 
   async create(data: CreateCourseDto) {
@@ -134,7 +137,6 @@ export class CoursesService {
         'modules.lessons',
         'modules.quizzes',
         'badges',
-        'certificate',
         'finalAssessments',
         'createdBy',
       ],
@@ -248,6 +250,14 @@ export class CoursesService {
       finalAssessmentCompleted = !!submission;
     }
 
+    // Check if the course is completed for the user
+    let completed = false;
+    if (userId) {
+      const enrollments = await this.enrollmentsService.findByUser(userId);
+      const enrollment = enrollments.find(e => e.course.id === courseId);
+      completed = !!enrollment && enrollment.status === EnrollmentStatus.COMPLETED;
+    }
+
     return {
       id: course.id,
       title: course.title,
@@ -263,7 +273,7 @@ export class CoursesService {
         bio: course.createdBy.bio || '',
       } : null,
       rewards: {
-        certificate: course.certificate ? course.certificate.title : '',
+        certificate: course.hasCertificate ? 'Certificate of Completion' : '',
         challenges: course.finalAssessments ? course.finalAssessments.length : 0,
         badges: badges.map(b => ({
           id: b.id,
@@ -274,6 +284,8 @@ export class CoursesService {
       },
       finalAssessment,
       finalAssessmentCompleted,
+      hasCertificate: course.hasCertificate,
+      completed,
     };
   }
 

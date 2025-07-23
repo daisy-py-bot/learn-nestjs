@@ -11,4 +11,7 @@ export class CreateEnrollmentDto {
   @IsOptional()
   @IsEnum(EnrollmentStatus)
   status?: EnrollmentStatus;
+
+  @IsOptional()
+  certificateIssued?: boolean;
 }

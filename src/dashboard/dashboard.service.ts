@@ -26,7 +26,7 @@ export class DashboardService {
     const totalHours = enrollments.reduce((sum, e) => sum + (e.course.duration || 0), 0);
 
     // Completed courses
-    const completedCourses = enrollments.filter(e => e.status === 'completed');
+    const completedCourses = enrollments.filter(e => e.status === 'completed').map(e => ({ ...e, completed: true }));
 
     // User badges
     const badges = await this.badgesService.getUserBadges(userId);
@@ -43,7 +43,7 @@ export class DashboardService {
         relations: ['modules', 'modules.lessons'],
       });
       if (!courseWithModules) {
-        ongoingCourses.push({ ...e, progress: 0, resumeLessonId: null });
+        ongoingCourses.push({ ...e, progress: 0, resumeLessonId: null, completed: false });
         continue;
       }
       // Get completed lessons for user in this course
@@ -69,6 +69,7 @@ export class DashboardService {
         ...e,
         progress: totalMinutes > 0 ? completedMinutes / totalMinutes : 0,
         resumeLessonId,
+        completed: false,
       });
     }
 
@@ -87,7 +88,7 @@ export class DashboardService {
       },
       completedCourses,
       badges,
-      recommendedCourses,
+      recommendedCourses: recommendedCourses.map(rc => ({ ...rc, completed: !!enrollments.find(e => e.course.id === rc.id && e.status === 'completed') })),
       ongoingCourses,
     };
   }

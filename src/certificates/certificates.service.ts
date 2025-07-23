@@ -6,6 +6,8 @@ import { CreateCertificateDto } from './dto/create-certificate.dto';
 import { UpdateCertificateDto } from './dto/update-certificate.dto';
 import { User } from 'src/users/user.entity';
 import { Course } from 'src/courses/course.entity';
+import { EnrollmentsService } from 'src/enrollments/enrollments.service';
+import { EnrollmentStatus } from 'src/enrollments/enrollment.entity';
 
 @Injectable()
 export class CertificatesService {
@@ -18,6 +20,8 @@ export class CertificatesService {
 
     @InjectRepository(Course)
     private courseRepo: Repository<Course>,
+
+    private enrollmentsService: EnrollmentsService,
   ) {}
 
   async issueCertificate(dto: CreateCertificateDto) {
@@ -31,16 +35,40 @@ export class CertificatesService {
     const cert = this.certRepo.create({
       user: { id: dto.userId },
       course: { id: dto.courseId },
-      certificateUrl: dto.certificateUrl ?? '', // Add URL generation logic here later if needed
+      certificateUrl: dto.certificateUrl ?? '',
     });
 
-    return this.certRepo.save(cert);
+    const saved = await this.certRepo.save(cert);
+    // Update enrollment to set certificateIssued to true
+    const enrollments = await this.enrollmentsService.findByUser(dto.userId);
+    const enrollment = enrollments.find(e => e.course.id === dto.courseId);
+    if (enrollment && !enrollment.certificateIssued) {
+      await this.enrollmentsService.update(enrollment.id, { certificateIssued: true });
+    }
+    // Fetch with relations to include full user and course info
+    const fullCert = await this.certRepo.findOne({
+      where: { id: saved.id },
+      relations: ['user', 'course'],
+    });
+    return fullCert;
   }
 
   findAllForUser(userId: string) {
     return this.certRepo.find({
       where: { user: { id: userId } },
     });
+  }
+
+  async findByUserAndCourse(userId: string, courseId: string) {
+    // Optionally, check if the course has a certificate enabled
+    const course = await this.courseRepo.findOne({ where: { id: courseId } });
+    if (!course) throw new NotFoundException('Course not found');
+    if (!course.hasCertificate) throw new NotFoundException('This course does not issue certificates');
+    const cert = await this.certRepo.findOne({
+      where: { user: { id: userId }, course: { id: courseId } },
+    });
+    if (!cert) throw new NotFoundException('Certificate not found');
+    return cert;
   }
 
   async remove(id: string) {

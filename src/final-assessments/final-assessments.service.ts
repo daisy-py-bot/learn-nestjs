@@ -6,6 +6,9 @@ import { Course } from 'src/courses/course.entity';
 import { CreateFinalAssessmentDto } from './dto/create-final-assessment.dto';
 import { UpdateFinalAssessmentDto } from './dto/update-final-assessment.dto';
 import { FinalAssessmentSubmission } from './final-assessment-submission.entity';
+import { CertificatesService } from 'src/certificates/certificates.service';
+import { EnrollmentsService } from 'src/enrollments/enrollments.service';
+import { EnrollmentStatus } from 'src/enrollments/enrollment.entity';
 
 @Injectable()
 export class FinalAssessmentsService {
@@ -18,6 +21,9 @@ export class FinalAssessmentsService {
 
     @InjectRepository(FinalAssessmentSubmission)
     private submissionRepo: Repository<FinalAssessmentSubmission>,
+
+    private certificatesService: CertificatesService,
+    private enrollmentsService: EnrollmentsService,
   ) {}
 
   async create(data: CreateFinalAssessmentDto) {
@@ -68,7 +74,7 @@ export class FinalAssessmentsService {
   }
 
   async submitAndGradeAssessment({ userId, assessmentId, answers }: { userId: string, assessmentId: string, answers: { [questionId: string]: string } | string[] }) {
-    const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
+    const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId }, relations: ['course'] });
     if (!assessment) throw new NotFoundException('Assessment not found');
 
     // Grade answers (simple logic: check if user answer contains any sample word)
@@ -104,6 +110,12 @@ export class FinalAssessmentsService {
         score: totalScore,
         answers,
       });
+      // Mark enrollment as completed
+      const enrollments = await this.enrollmentsService.findByUser(userId);
+      const enrollment = enrollments.find(e => e.course.id === assessment.course.id);
+      if (enrollment && enrollment.status !== EnrollmentStatus.COMPLETED) {
+        await this.enrollmentsService.update(enrollment.id, { status: EnrollmentStatus.COMPLETED });
+      }
     }
     return {
       assessmentId,
@@ -150,6 +162,7 @@ export class FinalAssessmentsService {
       score: submission.score,
       completedAt: submission.completedAt,
       results,
+      passed: (submission.score / assessment.questions.length) * 100 >= assessment.passingScore,
     };
   }
 }
