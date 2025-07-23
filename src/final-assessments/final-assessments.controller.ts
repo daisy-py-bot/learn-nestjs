@@ -31,4 +31,19 @@ export class FinalAssessmentsController {
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
+
+  @Get('user/:userId/:assessmentId')
+  async getUserFinalAssessment(@Param('userId') userId: string, @Param('assessmentId') assessmentId: string) {
+    return this.service.getUserFinalAssessment(userId, assessmentId);
+  }
+
+  @Post('submit')
+  async submitAndGradeAssessment(@Body() body: { userId: string, assessmentId: string, answers: { [questionId: string]: string } | string[] }) {
+    return this.service.submitAndGradeAssessment(body);
+  }
+
+  @Get('submission/:userId/:assessmentId')
+  async getFinalAssessmentSubmission(@Param('userId') userId: string, @Param('assessmentId') assessmentId: string) {
+    return this.service.getFinalAssessmentSubmission(userId, assessmentId);
+  }
 }

@@ -29,6 +29,8 @@ export class FinalAssessment {
     sampleAnswer: string;
   }[];
 
+  @Column({ type: 'int', default: 0 })
+  duration: number; // duration in minutes
 
 
   @Column('int')

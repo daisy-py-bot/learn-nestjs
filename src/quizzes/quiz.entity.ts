@@ -21,6 +21,9 @@ export class Quiz {
   @Column({ type: 'int', default: 0 })
   unlockAfter: number;
 
+  @Column({ type: 'int', default: 0 })
+  duration: number; // duration in minutes
+
   @Column({ type: 'jsonb' })
   questions: {
     id: string; // unique identifier for the question 

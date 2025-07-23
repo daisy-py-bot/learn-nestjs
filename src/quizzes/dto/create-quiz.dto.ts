@@ -34,6 +34,10 @@ export class CreateQuizDto {
   @IsOptional()
   unlockAfter?: number;
 
+  @IsInt()
+  @IsOptional()
+  duration?: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => QuizQuestionDto)

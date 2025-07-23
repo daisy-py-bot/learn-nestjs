@@ -13,4 +13,7 @@ export class CreateFinalAssessmentDto {
 
   @IsInt()
   passingScore: number;
+
+  @IsInt()
+  duration: number;
 }

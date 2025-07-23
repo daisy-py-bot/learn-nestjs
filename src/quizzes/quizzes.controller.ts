@@ -31,4 +31,14 @@ export class QuizzesController {
   remove(@Param('id') id: string) {
     return this.quizzesService.remove(id);
   }
+
+  @Post('grade')
+  async gradeQuiz(@Body() body: { courseId: string, quizId: string, userId: string, answers: { [questionId: string]: string } }) {
+    return this.quizzesService.gradeQuiz(body);
+  }
+
+  @Get('submissions/:userId/:quizId')
+  async getQuizSubmission(@Param('userId') userId: string, @Param('quizId') quizId: string) {
+    return this.quizzesService.getQuizSubmission(userId, quizId);
+  }
 }

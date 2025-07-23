@@ -9,6 +9,8 @@ import { getRepository } from 'typeorm';
 import { ProgressService } from 'src/progress/progress.service';
 import { Badge } from 'src/badges/badge.entity';
 import { CourseCategory } from './course.entity';
+import { QuizzesService } from 'src/quizzes/quizzes.service';
+import { FinalAssessmentsService } from 'src/final-assessments/final-assessments.service';
 
 @Injectable()
 export class CoursesService {
@@ -18,6 +20,8 @@ export class CoursesService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
     private progressService: ProgressService,
+    private quizzesService: QuizzesService,
+    private finalAssessmentsService: FinalAssessmentsService,
   ) {}
 
   async create(data: CreateCourseDto) {
@@ -128,6 +132,7 @@ export class CoursesService {
       relations: [
         'modules',
         'modules.lessons',
+        'modules.quizzes',
         'badges',
         'certificate',
         'finalAssessments',
@@ -191,10 +196,21 @@ export class CoursesService {
       userProgress = await this.progressService.getCourseProgress(userId, courseId);
     }
 
-    // Map modules with progress information
-    const modules = course.modules.map((mod) => {
+    // Map modules with progress information and quizzes
+    const modules = await Promise.all(course.modules.map(async (mod) => {
       // Calculate total duration from lessons
       const totalLessonDuration = (mod.lessons || []).reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+      // For each quiz, check if completed by user
+      const quizzes = await Promise.all((mod.quizzes || []).map(async (quiz) => {
+        let completed = false;
+        if (userId) {
+          const submission = await this.quizzesService['quizSubmissionRepo'].findOne({
+            where: { user: { id: userId }, quiz: { id: quiz.id } },
+          });
+          completed = !!submission;
+        }
+        return { ...quiz, completed };
+      }));
       return {
         id: mod.id,
         title: mod.title,
@@ -211,11 +227,26 @@ export class CoursesService {
             current: lesson.id === currentLessonIdToUse,
           };
         }),
+        quizzes,
       };
-    });
+    }));
 
     // Fetch badges by badgeNames
     const badges = await this.getBadgesByNames(course.badgeNames || []);
+
+    // Get the first final assessment for the course, if any
+    const finalAssessment = course.finalAssessments && course.finalAssessments.length > 0
+      ? course.finalAssessments[0]
+      : null;
+
+    // Check if user has completed the final assessment
+    let finalAssessmentCompleted = false;
+    if (userId && finalAssessment) {
+      const submission = await this.finalAssessmentsService['submissionRepo'].findOne({
+        where: { user: { id: userId }, assessment: { id: finalAssessment.id } },
+      });
+      finalAssessmentCompleted = !!submission;
+    }
 
     return {
       id: course.id,
@@ -241,6 +272,8 @@ export class CoursesService {
           iconUrl: b.iconUrl,
         })),
       },
+      finalAssessment,
+      finalAssessmentCompleted,
     };
   }
 
