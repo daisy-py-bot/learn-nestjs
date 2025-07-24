@@ -5,9 +5,10 @@ import { FeedbackService } from './feedback.service';
 import { FeedbackController } from './feedback.controller';
 import { User } from 'src/users/user.entity';
 import { Course } from 'src/courses/course.entity';
+import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Feedback, User, Course])],
+  imports: [TypeOrmModule.forFeature([Feedback, User, Course]), ActivityLogsModule],
   controllers: [FeedbackController],
   providers: [FeedbackService],
   exports: [FeedbackService],

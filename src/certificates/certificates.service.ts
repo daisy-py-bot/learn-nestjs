@@ -8,6 +8,8 @@ import { User } from 'src/users/user.entity';
 import { Course } from 'src/courses/course.entity';
 import { EnrollmentsService } from 'src/enrollments/enrollments.service';
 import { EnrollmentStatus } from 'src/enrollments/enrollment.entity';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { ActionType } from '../activity-logs/activity-log.entity';
 
 @Injectable()
 export class CertificatesService {
@@ -22,6 +24,7 @@ export class CertificatesService {
     private courseRepo: Repository<Course>,
 
     private enrollmentsService: EnrollmentsService,
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async issueCertificate(dto: CreateCertificateDto) {
@@ -50,6 +53,14 @@ export class CertificatesService {
       where: { id: saved.id },
       relations: ['user', 'course'],
     });
+
+    // Log certificate issuance
+    await this.activityLogsService.create({
+      userId: user.id,
+      actionType: ActionType.GOTTEN_CERTIFICATE,
+      metadata: { courseId: course.id, certificateId: saved.id },
+    });
+
     return fullCert;
   }
 
@@ -57,6 +68,10 @@ export class CertificatesService {
     return this.certRepo.find({
       where: { user: { id: userId } },
     });
+  }
+
+  findAll() {
+    return this.certRepo.find();
   }
 
   async findByUserAndCourse(userId: string, courseId: string) {

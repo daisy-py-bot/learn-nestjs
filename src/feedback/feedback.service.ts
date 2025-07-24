@@ -6,6 +6,8 @@ import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { User } from 'src/users/user.entity';
 import { Course } from 'src/courses/course.entity';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { ActionType } from '../activity-logs/activity-log.entity';
 
 @Injectable()
 export class FeedbackService {
@@ -18,6 +20,8 @@ export class FeedbackService {
 
     @InjectRepository(Course)
     private courseRepo: Repository<Course>,
+
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async create(dto: CreateFeedbackDto) {
@@ -36,7 +40,16 @@ export class FeedbackService {
       fullResponse: dto.fullResponse ?? null,
     });
 
-    return this.feedbackRepo.save(feedback);
+    const saved = await this.feedbackRepo.save(feedback);
+
+    // Log feedback submission
+    await this.activityLogsService.create({
+      userId: user.id,
+      actionType: ActionType.SUBMITTED_FEEDBACK,
+      metadata: { courseId: course.id, feedbackId: saved.id },
+    });
+
+    return saved;
   }
 
   findAllForCourse(courseId: string) {

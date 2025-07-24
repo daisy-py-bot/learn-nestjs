@@ -6,6 +6,8 @@ import { Module } from 'src/modules/module.entity';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { QuizSubmission } from './quiz-submission.entity';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { ActionType } from '../activity-logs/activity-log.entity';
 
 @Injectable()
 export class QuizzesService {
@@ -18,6 +20,7 @@ export class QuizzesService {
 
     @InjectRepository(QuizSubmission)
     private quizSubmissionRepo: Repository<QuizSubmission>,
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async create(data: CreateQuizDto) {
@@ -92,11 +95,18 @@ export class QuizzesService {
     // Save submission if userId is provided
     if (userId) {
       const totalScore = results.reduce((sum, r) => sum + r.score, 0);
-      await this.quizSubmissionRepo.save({
+      const submission = await this.quizSubmissionRepo.save({
         quiz: { id: quizId },
         user: { id: userId },
         score: totalScore,
         answers,
+      });
+
+      // Log quiz submission
+      await this.activityLogsService.create({
+        userId,
+        actionType: ActionType.SUBMITTED_QUIZ,
+        metadata: { quizId, submissionId: submission.id },
       });
     }
 

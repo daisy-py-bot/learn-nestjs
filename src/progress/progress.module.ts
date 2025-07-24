@@ -6,9 +6,13 @@ import { Lesson } from 'src/lessons/lesson.entity';
 import { Course } from 'src/courses/course.entity';
 import { ProgressService } from './progress.service';
 import { ProgressController } from './progress.controller';
+import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Progress, User, Lesson, Course])],
+  imports: [
+    TypeOrmModule.forFeature([Progress, User, Lesson, Course]),
+    ActivityLogsModule,
+  ],
   providers: [ProgressService],
   controllers: [ProgressController],
   exports: [ProgressService],

@@ -14,6 +14,8 @@ export enum ActionType {
   COMPLETED_LESSON = 'completed_lesson',
   SUBMITTED_QUIZ = 'submitted_quiz',
   SUBMITTED_ASSESSMENT = 'submitted_assessment',
+  SUBMITTED_FEEDBACK = 'submitted_feedback',
+  GOTTEN_CERTIFICATE = 'gotten_certificate',
 }
 
 @Entity()

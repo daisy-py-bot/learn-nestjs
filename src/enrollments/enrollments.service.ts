@@ -7,6 +7,8 @@ import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { User } from 'src/users/user.entity';
 import { Course } from 'src/courses/course.entity';
 import { BadgesService } from 'src/badges/badges.service';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { ActionType } from '../activity-logs/activity-log.entity';
 
 @Injectable()
 export class EnrollmentsService {
@@ -21,6 +23,7 @@ export class EnrollmentsService {
     private courseRepo: Repository<Course>,
 
     private readonly badgeService: BadgesService,
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async create(data: CreateEnrollmentDto) {
@@ -80,6 +83,13 @@ export class EnrollmentsService {
       if (badge) {
         await this.badgeService.awardBadge(enrollment.user.id, badge.id);
       }
+
+      // Log course completion
+      await this.activityLogsService.create({
+        userId: enrollment.user.id,
+        actionType: ActionType.COMPLETED_COURSE,
+        metadata: { courseId: enrollment.course.id, enrollmentId: enrollment.id },
+      });
     }
 
     Object.assign(enrollment, updates);

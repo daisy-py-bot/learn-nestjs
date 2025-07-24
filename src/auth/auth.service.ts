@@ -4,12 +4,15 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { ActionType } from '../activity-logs/activity-log.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async register(data: RegisterDto) {
@@ -32,6 +35,13 @@ export class AuthService {
 
     // Update last login timestamp
     await this.usersService.updateLastLogin(user.id);
+
+    // Log login activity
+    await this.activityLogsService.create({
+      userId: user.id,
+      actionType: ActionType.LOGIN,
+      metadata: { email: user.email },
+    });
 
     const payload = { sub: user.id, email: user.email };
     return {

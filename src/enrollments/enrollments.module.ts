@@ -6,9 +6,10 @@ import { EnrollmentsController } from './enrollments.controller';
 import { User } from 'src/users/user.entity';
 import { Course } from 'src/courses/course.entity';
 import { BadgesModule } from 'src/badges/badges.module';
+import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Enrollment, User, Course]), BadgesModule],
+  imports: [TypeOrmModule.forFeature([Enrollment, User, Course]), BadgesModule, ActivityLogsModule],
   providers: [EnrollmentsService],
   controllers: [EnrollmentsController],
   exports: [EnrollmentsService],

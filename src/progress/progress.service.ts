@@ -7,6 +7,8 @@ import { UpdateProgressDto } from './dto/update-progress.dto';
 import { User } from 'src/users/user.entity';
 import { Lesson } from 'src/lessons/lesson.entity';
 import { Course } from 'src/courses/course.entity';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { ActionType } from '../activity-logs/activity-log.entity';
 
 @Injectable()
 export class ProgressService {
@@ -22,6 +24,8 @@ export class ProgressService {
 
     @InjectRepository(Course)
     private courseRepo: Repository<Course>,
+
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async createOrUpdateProgress(dto: CreateProgressDto) {
@@ -140,5 +144,41 @@ export class ProgressService {
       lastAccessedAt: record.lastAccessedAt,
       completedAt: record.completedAt,
     }));
+  }
+
+  async markLessonComplete(userId: string, lessonId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
+
+    if (!user || !lesson) {
+      throw new NotFoundException('User or Lesson not found');
+    }
+
+    let progress = await this.progressRepo.findOne({
+      where: { user: { id: userId }, lesson: { id: lessonId } },
+    });
+
+    if (!progress) {
+      const progressData: DeepPartial<Progress> = {
+        user: { id: userId },
+        lesson: { id: lessonId },
+        isCompleted: true,
+        completedAt: new Date(),
+      };
+      progress = this.progressRepo.create(progressData);
+    } else {
+      progress.isCompleted = true;
+      progress.completedAt = new Date();
+    }
+
+    const updatedProgress = await this.progressRepo.save(progress);
+
+    await this.activityLogsService.create({
+      userId,
+      actionType: ActionType.COMPLETED_LESSON,
+      metadata: { lessonId },
+    });
+
+    return updatedProgress;
   }
 }

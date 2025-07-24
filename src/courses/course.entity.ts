@@ -81,4 +81,7 @@ export class Course{
     @OneToMany(() => Module, (module) => module.course)
     modules: Module[];
 
+    @CreateDateColumn()
+    createdAt: Date;
+
 }
