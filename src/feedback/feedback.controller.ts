@@ -22,6 +22,11 @@ export class FeedbackController {
     return this.feedbackService.findPublicTestimonials(courseId);
   }
 
+  @Get('user/:userId/course/:courseId')
+  findByUserAndCourse(@Param('userId') userId: string, @Param('courseId') courseId: string) {
+    return this.feedbackService.findByUserAndCourse(userId, courseId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateFeedbackDto) {
     return this.feedbackService.update(id, dto);

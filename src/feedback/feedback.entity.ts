@@ -28,6 +28,9 @@ export class Feedback {
   @Column({ type: 'text', nullable: true })
   testimonial: string;
 
+  @Column({ type: 'json', nullable: true })
+  fullResponse?: any;
+
   @Column({ default: false })
   publicOk: boolean;
 

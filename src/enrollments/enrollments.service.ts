@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Enrollment, EnrollmentStatus } from './enrollment.entity';
@@ -29,6 +29,14 @@ export class EnrollmentsService {
 
     if (!user) throw new NotFoundException('User not found');
     if (!course) throw new NotFoundException('Course not found');
+
+    // Check if the user is already enrolled in the course
+    const existingEnrollment = await this.enrollRepo.findOne({
+      where: { user: { id: data.userId }, course: { id: data.courseId } },
+    });
+    if (existingEnrollment) {
+      throw new ConflictException('User is already enrolled in this course');
+    }
 
     const enrollment = this.enrollRepo.create({
       user: { id: data.userId },

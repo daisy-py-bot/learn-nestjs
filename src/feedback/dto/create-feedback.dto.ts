@@ -23,4 +23,7 @@ export class CreateFeedbackDto {
   @IsOptional()
   @IsBoolean()
   publicOk?: boolean;
+
+  @IsOptional()
+  fullResponse?: any;
 }

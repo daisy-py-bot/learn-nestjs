@@ -33,6 +33,7 @@ export class FeedbackService {
       comment: dto.comment,
       testimonial: dto.testimonial,
       publicOk: dto.publicOk ?? false,
+      fullResponse: dto.fullResponse ?? null,
     });
 
     return this.feedbackRepo.save(feedback);
@@ -64,5 +65,11 @@ export class FeedbackService {
     if (!feedback) throw new NotFoundException('Feedback not found');
 
     return this.feedbackRepo.remove(feedback);
+  }
+
+  async findByUserAndCourse(userId: string, courseId: string) {
+    return this.feedbackRepo.findOne({
+      where: { user: { id: userId }, course: { id: courseId } },
+    });
   }
 }
