@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Patch, Delete, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('admins')
 export class AdminController {
@@ -20,6 +21,15 @@ export class AdminController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.adminsService.findOne(id);
+  }
+
+  @Get('profile/:id')
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@Param('id') id: string) {
+    const admin = await this.adminsService.findOne(id);
+    if (!admin) return null;
+    const { firstname, lastname, email, role, avatar, createdAt, lastLogin } = admin;
+    return { firstname, lastname, email, role, avatar, createdAt, lastLogin };
   }
 
   @Patch(':id')

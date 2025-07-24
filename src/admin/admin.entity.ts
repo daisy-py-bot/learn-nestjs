@@ -31,10 +31,14 @@ import {
     @Column({ type: 'enum', enum: AdminRole, default: AdminRole.ADMIN })
     role: AdminRole;
   
+    @Column({ nullable: true })
+    avatar?: string;
+  
     @CreateDateColumn()
     createdAt: Date;
   
     @Column({ type: 'timestamp', nullable: true })
     lastLogin: Date;
+    
   }
   

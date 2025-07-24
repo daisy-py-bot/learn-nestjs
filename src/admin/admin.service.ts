@@ -25,6 +25,10 @@ export class AdminService {
     return this.adminRepo.findOne({ where: { id } });
   }
 
+  findOneByEmail(email: string) {
+    return this.adminRepo.findOne({ where: { email } });
+  }
+
   async update(id: string, updates: UpdateAdminDto) {
     const admin = await this.adminRepo.findOne({ where: { id } });
     if (!admin) throw new NotFoundException('Admin not found');
