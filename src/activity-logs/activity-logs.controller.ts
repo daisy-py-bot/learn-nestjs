@@ -35,6 +35,7 @@ export class ActivityLogsController {
       }
       return {
         name: log.user ? `${log.user.firstname} ${log.user.lastname}` : 'Unknown',
+        userId: log.user?.id || null,
         avatar: log.user?.avatarUrl || null,
         type: log.actionType,
         time: log.createdAt, // Frontend can format as 'time ago'
