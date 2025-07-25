@@ -1,4 +1,4 @@
-import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, ManyToMany, JoinTable, OneToMany} from 'typeorm'
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, ManyToMany, JoinTable, OneToMany} from 'typeorm'
 import { User } from 'src/users/user.entity'
 import { Module } from 'src/modules/module.entity';
 import { Badge } from 'src/badges/badge.entity';
@@ -83,5 +83,8 @@ export class Course{
 
     @CreateDateColumn()
     createdAt: Date;
+
+    @UpdateDateColumn()
+    updatedAt: Date;
 
 }
