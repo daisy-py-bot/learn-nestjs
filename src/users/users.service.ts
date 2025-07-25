@@ -32,5 +32,16 @@ export class UsersService {
         return this.userRepo.update(id, { lastlogin: new Date() });
     }
 
+    async update(id: string, updates: Partial<User>) {
+        await this.userRepo.update(id, updates);
+        return this.userRepo.findOne({ where: { id } });
+    }
+
+    async remove(id: string) {
+        const user = await this.userRepo.findOne({ where: { id } });
+        if (!user) throw new Error('User not found');
+        return this.userRepo.remove(user);
+    }
+
 
 }

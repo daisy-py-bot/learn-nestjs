@@ -34,6 +34,9 @@ import {
     @Column({ nullable: true })
     avatar?: string;
   
+    @Column({ default: true })
+    active: boolean;
+  
     @CreateDateColumn()
     createdAt: Date;
   
