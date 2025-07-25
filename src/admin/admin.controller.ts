@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Patch, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Patch, Delete, UseGuards, Req } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
@@ -8,6 +8,18 @@ import { CertificatesService } from '../certificates/certificates.service';
 import { CoursesService } from '../courses/courses.service';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { addMonths, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { UserStatus } from '../users/user.entity';
+import { AdminRole } from './admin.entity';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+
+// Simple SuperAdminGuard
+@Injectable()
+class SuperAdminGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const req = context.switchToHttp().getRequest();
+    return req.user && req.user.role === 'super_admin';
+  }
+}
 
 @Controller('admins')
 export class AdminController {
@@ -91,6 +103,33 @@ export class AdminController {
     ];
   }
 
+  @Get('user-management')
+  async getUserManagement() {
+    const users = await this.usersService.findAll();
+    const admins = await this.adminsService.findAll();
+    const all = [
+      ...users.map(u => ({
+        id: u.id,
+        fullname: `${u.firstname} ${u.lastname}`,
+        email: u.email,
+        status: u.status === undefined ? 'Active' : (u.status === UserStatus.ACTIVE ? 'Active' : 'Inactive'),
+        role: 'User',
+        joinedDate: u.createdAt ? u.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+        lastActive: u.lastlogin ? u.lastlogin.toLocaleString() : '',
+      })),
+      ...admins.map(a => ({
+        id: a.id,
+        fullname: `${a.firstname} ${a.lastname}`,
+        email: a.email,
+        status: 'Active',
+        role: a.role === undefined ? 'Admin' : (a.role.charAt(0).toUpperCase() + a.role.slice(1).replace('_', ' ')),
+        joinedDate: a.createdAt ? a.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+        lastActive: a.lastLogin ? a.lastLogin.toLocaleString() : '',
+      })),
+    ];
+    return all;
+  }
+
   @Get('profile/:id')
   @UseGuards(JwtAuthGuard)
   async getProfile(@Param('id') id: string) {
@@ -108,6 +147,12 @@ export class AdminController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() data: UpdateAdminDto) {
     return this.adminsService.update(id, data);
+  }
+
+  @Patch('change-role/:id')
+  async changeAdminRole(@Param('id') id: string) {
+    const updated = await this.adminsService.update(id, { role: AdminRole.SUPER_ADMIN });
+    return { message: 'Role updated to super_admin', admin: updated };
   }
 
   @Delete(':id')
