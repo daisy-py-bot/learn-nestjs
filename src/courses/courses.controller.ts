@@ -110,6 +110,11 @@ export class CoursesController {
     return this.coursesService.getCourseContent(id, userId, currentLessonId);
   }
 
+  @Get(':id/content/admin')
+  getCourseContentForAdmin(@Param('id') id: string) {
+    return this.coursesService.getCourseContentForAdmin(id);
+  }
+
   @Get(':id/statistics')
   getCourseStatistics(@Param('id') id: string) {
     return this.coursesService.getCourseStatistics(id);

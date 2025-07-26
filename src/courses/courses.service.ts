@@ -344,6 +344,98 @@ export class CoursesService {
     };
   }
 
+  async getCourseContentForAdmin(courseId: string) {
+    const course = await this.courseRepo.findOne({
+      where: { id: courseId },
+      relations: [
+        'modules',
+        'modules.lessons',
+        'modules.quizzes',
+        'badges',
+        'finalAssessments',
+        'createdBy',
+      ],
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    // Map modules with all content (no user-specific data)
+    const modules = course.modules.map((mod) => {
+      // Calculate total duration from lessons
+      const totalLessonDuration = (mod.lessons || []).reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+      
+      return {
+        id: mod.id,
+        title: mod.title,
+        description: mod.description,
+        order: mod.order,
+        duration: totalLessonDuration ? `${totalLessonDuration} min` : '0 min',
+        lessons: (mod.lessons || []).map((lesson) => ({
+          id: lesson.id,
+          title: lesson.title,
+          content: lesson.content,
+          mediaUrl: lesson.mediaUrl,
+          videoUrl: lesson.videoUrl,
+          transcript: lesson.transcript,
+          notes: lesson.notes,
+          resources: lesson.resources,
+          duration: lesson.duration ? `${lesson.duration} min` : '0 min',
+          type: lesson.type || 'video',
+          order: lesson.order,
+        })),
+        quizzes: (mod.quizzes || []).map((quiz) => ({
+          id: quiz.id,
+          title: quiz.title,
+          questions: quiz.questions,
+          unlockAfter: quiz.unlockAfter,
+          duration: quiz.duration,
+        })),
+      };
+    });
+
+    // Fetch badges by badgeNames
+    const badges = await this.getBadgesByNames(course.badgeNames || []);
+
+    return {
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      duration: course.duration,
+      level: course.level,
+      category: course.category,
+      isPublished: course.isPublished,
+      hasCertificate: course.hasCertificate,
+      modules,
+      objectives: course.objectives || [],
+      searchTags: course.searchTags || [],
+      instructor: course.createdBy ? {
+        id: course.createdBy.id,
+        name: `${course.createdBy.firstname} ${course.createdBy.lastname}`,
+        email: course.createdBy.email,
+        bio: course.createdBy.bio || '',
+        avatar: course.createdBy.avatarUrl || '',
+      } : null,
+      rewards: {
+        certificate: course.hasCertificate ? 'Certificate of Completion' : '',
+        challenges: course.finalAssessments ? course.finalAssessments.length : 0,
+        badges: badges.map(b => ({
+          id: b.id,
+          name: b.name,
+          description: b.description,
+          iconUrl: b.iconUrl,
+        })),
+      },
+      finalAssessments: (course.finalAssessments || []).map((assessment) => ({
+        id: assessment.id,
+        title: assessment.title,
+        questions: assessment.questions,
+        passingScore: assessment.passingScore,
+        duration: assessment.duration,
+      })),
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+    };
+  }
+
   async findCoursesByBadgeName(badgeName: string, userId?: string) {
     let courses = await this.courseRepo
       .createQueryBuilder('course')
