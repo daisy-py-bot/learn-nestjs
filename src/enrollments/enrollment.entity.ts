@@ -40,4 +40,7 @@ export class Enrollment {
 
   @Column({ type: 'timestamp', nullable: true })
   completedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastAccessedAt: Date;
 }

@@ -110,6 +110,11 @@ export class CoursesController {
     return this.coursesService.getCourseContent(id, userId, currentLessonId);
   }
 
+  @Get(':id/statistics')
+  getCourseStatistics(@Param('id') id: string) {
+    return this.coursesService.getCourseStatistics(id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updates: UpdateCourseDto){
     return this.coursesService.update(id, updates);

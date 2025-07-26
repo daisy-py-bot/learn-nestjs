@@ -16,6 +16,7 @@ import { EnrollmentStatus } from 'src/enrollments/enrollment.entity';
 import { Module } from 'src/modules/module.entity';
 import { Lesson } from 'src/lessons/lesson.entity';
 import { CreateCourseWithModulesLessonsDto, CreateModuleWithLessonsDto, CreateLessonDto } from './dto/create-course-with-modules-lessons.dto';
+import { FeedbackService } from 'src/feedback/feedback.service';
 
 @Injectable()
 export class CoursesService {
@@ -32,6 +33,7 @@ export class CoursesService {
     private quizzesService: QuizzesService,
     private finalAssessmentsService: FinalAssessmentsService,
     private enrollmentsService: EnrollmentsService,
+    private feedbackService: FeedbackService,
   ) {}
 
   async create(data: CreateCourseDto) {
@@ -178,6 +180,11 @@ export class CoursesService {
   }
 
   async getCourseContent(courseId: string, userId?: string, currentLessonId?: string) {
+    // Update lastAccessedAt for the user's enrollment if userId is provided
+    if (userId) {
+      await this.updateLastAccessedAt(userId, courseId);
+    }
+
     const course = await this.courseRepo.findOne({
       where: { id: courseId },
       relations: [
@@ -408,6 +415,66 @@ export class CoursesService {
   // Public method for dashboard to get user progress for a course
   async getCourseProgressForDashboard(userId: string, courseId: string) {
     return this.progressService.getCourseProgress(userId, courseId);
+  }
+
+  async getCourseStatistics(courseId: string) {
+    // 1. Get all enrollments for the course
+    const enrollments = await this.enrollmentsService.findByCourse(courseId);
+
+    // 2. Calculate statistics
+    const total = enrollments.length;
+    const completed = enrollments.filter(e => e.status === 'completed').length;
+    const completionRate = total ? Math.round((completed / total) * 100) : 0;
+
+    // Drop-off: in progress but not completed
+    const inProgress = enrollments.filter(e => e.status === 'in_progress').length;
+    const dropOffRate = (inProgress + completed) > 0 ? Math.round((inProgress / (inProgress + completed)) * 100) : 0;
+
+    // Active today: use lastAccessedAt
+    const today = new Date();
+    const activeToday = enrollments.filter(e => {
+      if (!e.lastAccessedAt) return false;
+      const d = new Date(e.lastAccessedAt);
+      return d.toDateString() === today.toDateString();
+    }).length;
+
+    // Avg completion time (in hours, only for completed enrollments)
+    const completionTimes = enrollments
+      .filter(e => e.status === 'completed' && e.startedAt && e.completedAt)
+      .map(e => (new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime()) / (1000 * 60 * 60));
+    const avgCompletionTime = completionTimes.length
+      ? (completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length).toFixed(1)
+      : '0';
+
+    // Avg rating from feedback
+    const feedbacks = await this.feedbackService.findAllForCourse(courseId);
+    const ratings = feedbacks.map(f => f.rating).filter(r => typeof r === 'number');
+    const avgRating = ratings.length
+      ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) + '/5'
+      : 'N/A';
+
+    return {
+      statistics: {
+        completionRate: `${completionRate}%`,
+        avgRating,
+        dropOffRate: `${dropOffRate}%`,
+        activeToday,
+        avgCompletionTime,
+        enrollments: total,
+      }
+    };
+  }
+
+  private async updateLastAccessedAt(userId: string, courseId: string) {
+    try {
+      const enrollment = await this.enrollmentsService.findByUserAndCourse(userId, courseId);
+      if (enrollment) {
+        await this.enrollmentsService.update(enrollment.id, { lastAccessedAt: new Date() });
+      }
+    } catch (error) {
+      // Silently handle errors - user might not be enrolled or other issues
+      console.log('Could not update lastAccessedAt:', error.message);
+    }
   }
 
 

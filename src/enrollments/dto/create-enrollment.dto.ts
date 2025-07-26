@@ -14,4 +14,7 @@ export class CreateEnrollmentDto {
 
   @IsOptional()
   certificateIssued?: boolean;
+
+  @IsOptional()
+  lastAccessedAt?: Date;
 }

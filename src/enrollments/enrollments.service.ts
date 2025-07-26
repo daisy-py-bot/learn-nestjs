@@ -71,6 +71,20 @@ export class EnrollmentsService {
     return this.enrollRepo.find({ where: { user: { id: userId } } });
   }
 
+  findByCourse(courseId: string) {
+    return this.enrollRepo.find({ 
+      where: { course: { id: courseId } },
+      relations: ['user', 'course']
+    });
+  }
+
+  findByUserAndCourse(userId: string, courseId: string) {
+    return this.enrollRepo.findOne({ 
+      where: { user: { id: userId }, course: { id: courseId } },
+      relations: ['user', 'course']
+    });
+  }
+
   async update(id: string, updates: UpdateEnrollmentDto) {
     const enrollment = await this.enrollRepo.findOne({ where: { id } });
     if (!enrollment) throw new NotFoundException('Enrollment not found');

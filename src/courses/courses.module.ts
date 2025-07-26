@@ -11,9 +11,10 @@ import { QuizzesModule } from 'src/quizzes/quizzes.module';
 import { FinalAssessmentsModule } from 'src/final-assessments/final-assessments.module';
 import { CertificatesModule } from 'src/certificates/certificates.module';
 import { EnrollmentsModule } from 'src/enrollments/enrollments.module';
+import { FeedbackModule } from 'src/feedback/feedback.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Course, User, CourseModuleEntity, Lesson]), ProgressModule, QuizzesModule, FinalAssessmentsModule, CertificatesModule, EnrollmentsModule],
+  imports: [TypeOrmModule.forFeature([Course, User, CourseModuleEntity, Lesson]), ProgressModule, QuizzesModule, FinalAssessmentsModule, CertificatesModule, EnrollmentsModule, FeedbackModule],
   providers: [CoursesService],
   controllers: [CoursesController],
   exports: [CoursesService],
