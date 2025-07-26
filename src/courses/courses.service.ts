@@ -13,6 +13,9 @@ import { QuizzesService } from 'src/quizzes/quizzes.service';
 import { FinalAssessmentsService } from 'src/final-assessments/final-assessments.service';
 import { EnrollmentsService } from 'src/enrollments/enrollments.service';
 import { EnrollmentStatus } from 'src/enrollments/enrollment.entity';
+import { Module } from 'src/modules/module.entity';
+import { Lesson } from 'src/lessons/lesson.entity';
+import { CreateCourseWithModulesLessonsDto, CreateModuleWithLessonsDto, CreateLessonDto } from './dto/create-course-with-modules-lessons.dto';
 
 @Injectable()
 export class CoursesService {
@@ -21,6 +24,10 @@ export class CoursesService {
     private courseRepo: Repository<Course>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(Module)
+    private moduleRepo: Repository<Module>,
+    @InjectRepository(Lesson)
+    private lessonRepo: Repository<Lesson>,
     private progressService: ProgressService,
     private quizzesService: QuizzesService,
     private finalAssessmentsService: FinalAssessmentsService,
@@ -49,6 +56,41 @@ export class CoursesService {
     });
 
     return this.courseRepo.save(course);
+  }
+
+  async createCourseWithModulesAndLessons(data: CreateCourseWithModulesLessonsDto) {
+    // Create the course
+    const course = this.courseRepo.create({
+      ...data,
+      modules: [],
+    });
+    await this.courseRepo.save(course);
+
+    // For each module, create and save it, then add lessons
+    for (const mod of data.modules) {
+      const module = this.moduleRepo.create({
+        title: mod.title,
+        // description: mod.description,
+        order: mod.order,
+        course: course,
+        lessons: [],
+      });
+      await this.moduleRepo.save(module);
+
+      for (const lesson of mod.lessons) {
+        const lessonEntity = this.lessonRepo.create({
+          ...lesson,
+          module: module,
+        });
+        await this.lessonRepo.save(lessonEntity);
+      }
+    }
+
+    // Return the created course with relations
+    return this.courseRepo.findOne({
+      where: { id: course.id },
+      relations: ['modules', 'modules.lessons'],
+    });
   }
 
   findAll() {

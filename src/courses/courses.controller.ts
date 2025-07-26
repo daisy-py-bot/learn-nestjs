@@ -3,6 +3,7 @@ import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
+import { CreateCourseWithModulesLessonsDto } from './dto/create-course-with-modules-lessons.dto';
 
 @Controller('courses')
 export class CoursesController {
@@ -14,6 +15,11 @@ export class CoursesController {
   @Post()
   create(@Body() data: CreateCourseDto) {
     return this.coursesService.create(data);
+  }
+
+  @Post('create-with-modules-lessons')
+  async createWithModulesLessons(@Body() data: CreateCourseWithModulesLessonsDto) {
+    return this.coursesService.createCourseWithModulesAndLessons(data);
   }
 
   @Get()
