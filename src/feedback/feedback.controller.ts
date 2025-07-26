@@ -27,6 +27,16 @@ export class FeedbackController {
     return this.feedbackService.findByUserAndCourse(userId, courseId);
   }
 
+  @Get('admin/all')
+  getAllFeedbackForAdmin() {
+    return this.feedbackService.getAllFeedbackForAdmin();
+  }
+
+  @Get('admin/statistics')
+  getFeedbackStatistics() {
+    return this.feedbackService.getFeedbackStatistics();
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateFeedbackDto) {
     return this.feedbackService.update(id, dto);
