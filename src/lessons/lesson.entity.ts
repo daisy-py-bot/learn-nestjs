@@ -13,6 +13,7 @@ export enum LessonType {
   QUIZ = 'quiz',
   PDF = 'pdf',
   DOC = 'doc',
+  IMAGE = 'image',
 }
 
 @Entity()

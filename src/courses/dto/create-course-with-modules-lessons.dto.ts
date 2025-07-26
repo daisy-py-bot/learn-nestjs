@@ -4,6 +4,7 @@ export enum LessonType {
   QUIZ = 'quiz',
   PDF = 'pdf',
   DOC = 'doc',
+  IMAGE = 'image',
 }
 
 export class CreateLessonDto {
@@ -21,7 +22,7 @@ export class CreateLessonDto {
 
 export class CreateModuleWithLessonsDto {
   title: string;
-//   description: string;
+  description: string;
   order: number;
   duration?: number;
   lessons: CreateLessonDto[];

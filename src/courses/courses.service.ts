@@ -70,7 +70,7 @@ export class CoursesService {
     for (const mod of data.modules) {
       const module = this.moduleRepo.create({
         title: mod.title,
-        // description: mod.description,
+        description: mod.description,
         order: mod.order,
         course: course,
         lessons: [],
