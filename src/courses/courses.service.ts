@@ -465,6 +465,15 @@ export class CoursesService {
     };
   }
 
+  async getModulesForCourse(courseId: string) {
+    const course = await this.courseRepo.findOne({
+      where: { id: courseId },
+      relations: ['modules'],
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    return course.modules;
+  }
+
   private async updateLastAccessedAt(userId: string, courseId: string) {
     try {
       const enrollment = await this.enrollmentsService.findByUserAndCourse(userId, courseId);

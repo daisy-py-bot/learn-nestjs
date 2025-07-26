@@ -165,4 +165,36 @@ export class FinalAssessmentsService {
       passed: (submission.score / assessment.questions.length) * 100 >= assessment.passingScore,
     };
   }
+
+  async getRandomFinalAssessmentForCourse(courseId: string) {
+    const assessments = await this.assessmentRepo.find({ where: { course: { id: courseId } } });
+    if (!assessments.length) return null;
+    const randomIndex = Math.floor(Math.random() * assessments.length);
+    return assessments[randomIndex];
+  }
+
+  async getRandomUnattemptedAssessmentForUser(courseId: string, userId: string) {
+    // Get all assessments for the course
+    const assessments = await this.assessmentRepo.find({ where: { course: { id: courseId } } });
+    if (!assessments.length) return null;
+
+    // Get all submissions for this user/course
+    const submissions = await this.submissionRepo.find({
+      where: { user: { id: userId } },
+      relations: ['assessment'],
+    });
+    const attemptedIds = new Set(submissions.map(s => s.assessment.id));
+
+    // Filter out attempted assessments
+    const unattempted = assessments.filter(a => !attemptedIds.has(a.id));
+    if (!unattempted.length) {
+      // All attempted, allow repeats
+      const randomIndex = Math.floor(Math.random() * assessments.length);
+      return assessments[randomIndex];
+    }
+
+    // Pick a random unattempted assessment
+    const randomIndex = Math.floor(Math.random() * unattempted.length);
+    return unattempted[randomIndex];
+  }
 }

@@ -46,4 +46,14 @@ export class FinalAssessmentsController {
   async getFinalAssessmentSubmission(@Param('userId') userId: string, @Param('assessmentId') assessmentId: string) {
     return this.service.getFinalAssessmentSubmission(userId, assessmentId);
   }
+
+  @Get('course/:courseId/random')
+  async getRandomForCourse(@Param('courseId') courseId: string) {
+    return this.service.getRandomFinalAssessmentForCourse(courseId);
+  }
+
+  @Get('course/:courseId/user/:userId/random')
+  async getRandomUnattemptedForUser(@Param('courseId') courseId: string, @Param('userId') userId: string) {
+    return this.service.getRandomUnattemptedAssessmentForUser(courseId, userId);
+  }
 }

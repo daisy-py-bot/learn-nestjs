@@ -115,6 +115,11 @@ export class CoursesController {
     return this.coursesService.getCourseStatistics(id);
   }
 
+  @Get(':id/modules')
+  getModulesForCourse(@Param('id') id: string) {
+    return this.coursesService.getModulesForCourse(id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updates: UpdateCourseDto){
     return this.coursesService.update(id, updates);
