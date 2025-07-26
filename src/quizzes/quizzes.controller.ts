@@ -41,4 +41,14 @@ export class QuizzesController {
   async getQuizSubmission(@Param('userId') userId: string, @Param('quizId') quizId: string) {
     return this.quizzesService.getQuizSubmission(userId, quizId);
   }
+
+  @Get('module/:moduleId/random')
+  async getRandomForModule(@Param('moduleId') moduleId: string) {
+    return this.quizzesService.getRandomQuizForModule(moduleId);
+  }
+
+  @Get('module/:moduleId/user/:userId/random')
+  async getRandomUnattemptedForUser(@Param('moduleId') moduleId: string, @Param('userId') userId: string) {
+    return this.quizzesService.getRandomUnattemptedQuizForUser(moduleId, userId);
+  }
 }

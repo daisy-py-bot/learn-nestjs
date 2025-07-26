@@ -150,4 +150,36 @@ export class QuizzesService {
       results,
     };
   }
+
+  async getRandomQuizForModule(moduleId: string) {
+    const quizzes = await this.quizRepo.find({ where: { module: { id: moduleId } } });
+    if (!quizzes.length) return null;
+    const randomIndex = Math.floor(Math.random() * quizzes.length);
+    return quizzes[randomIndex];
+  }
+
+  async getRandomUnattemptedQuizForUser(moduleId: string, userId: string) {
+    // Get all quizzes for the module
+    const quizzes = await this.quizRepo.find({ where: { module: { id: moduleId } } });
+    if (!quizzes.length) return null;
+
+    // Get all submissions for this user/module
+    const submissions = await this.quizSubmissionRepo.find({
+      where: { user: { id: userId } },
+      relations: ['quiz'],
+    });
+    const attemptedIds = new Set(submissions.map(s => s.quiz.id));
+
+    // Filter out attempted quizzes
+    const unattempted = quizzes.filter(q => !attemptedIds.has(q.id));
+    if (!unattempted.length) {
+      // All attempted, allow repeats
+      const randomIndex = Math.floor(Math.random() * quizzes.length);
+      return quizzes[randomIndex];
+    }
+
+    // Pick a random unattempted quiz
+    const randomIndex = Math.floor(Math.random() * unattempted.length);
+    return unattempted[randomIndex];
+  }
 }
