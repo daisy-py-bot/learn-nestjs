@@ -20,8 +20,6 @@ export class AuthService {
   ) {}
 
   async register(data: RegisterDto) {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    
     // Check if user already exists
     const existingUser = await this.usersService.findByEmail(data.email);
     const existingAdmin = await this.adminService.findOneByEmail(data.email);
@@ -30,51 +28,26 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
     
-    // Check if this is an admin registration
-    if (data.isAdmin) {
-      const admin = await this.adminService.create({
-        ...data,
-        password: hashedPassword,
-        isEmailVerified: false, // Add email verification status
-      });
-      
-      // Send OTP for email verification
-      try {
-        await this.otpService.sendOTP(data.email, 'signup');
-        return {
-          message: 'Account created. Please verify your email with the OTP sent.',
-          email: data.email,
-        };
-      } catch (error) {
-        console.error('Failed to send OTP for admin:', error);
-        return {
-          message: 'Account created but email verification failed. Please contact support.',
-          email: data.email,
-          error: 'OTP_SEND_FAILED'
-        };
-      }
-    } else {
-      const user = await this.usersService.create({
-        ...data,
-        password: hashedPassword,
-        isEmailVerified: false, // Add email verification status
-      });
-      
-      // Send OTP for email verification
-      try {
-        await this.otpService.sendOTP(data.email, 'signup');
-        return {
-          message: 'Account created. Please verify your email with the OTP sent.',
-          email: data.email,
-        };
-      } catch (error) {
-        console.error('Failed to send OTP for user:', error);
-        return {
-          message: 'Account created but email verification failed. Please contact support.',
-          email: data.email,
-          error: 'OTP_SEND_FAILED'
-        };
-      }
+    // Hash password for storage
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    
+    // Store registration data temporarily with OTP
+    const registrationData = {
+      ...data,
+      password: hashedPassword,
+      isEmailVerified: false,
+    };
+    
+    // Send OTP for email verification (don't create user yet)
+    try {
+      await this.otpService.sendOTP(data.email, 'signup', registrationData);
+      return {
+        message: 'Please check your email and verify with the OTP sent.',
+        email: data.email,
+      };
+    } catch (error) {
+      console.error('Failed to send OTP:', error);
+      throw new BadRequestException('Failed to send verification email. Please try again.');
     }
   }
 
@@ -136,55 +109,91 @@ export class AuthService {
   }
 
   async verifySignupOTP(email: string, otp: string): Promise<{ message: string; access_token?: string; user?: any }> {
-    await this.otpService.verifyOTP(email, otp);
-
-    const user = await this.usersService.findByEmail(email);
-    const admin = await this.adminService.findOneByEmail(email);
-
-    if (!user && !admin) {
-      throw new NotFoundException('User not found');
+    const verificationResult = await this.otpService.verifyOTP(email, otp);
+    
+    if (!verificationResult.isValid) {
+      throw new BadRequestException('Invalid OTP');
     }
 
-    if (user && user.isEmailVerified) {
-      // User already verified, return token
-      const payload = { sub: user.id, email: user.email, isAdmin: false };
-      return { 
-        message: 'Email is already verified. Welcome back!',
-        access_token: this.jwtService.sign(payload),
-        user: { id: user.id, email: user.email, isAdmin: false }
-      };
+    // Check if user already exists (in case of duplicate verification attempts)
+    const existingUser = await this.usersService.findByEmail(email);
+    const existingAdmin = await this.adminService.findOneByEmail(email);
+
+    if (existingUser || existingAdmin) {
+      // User already exists, just verify email
+      if (existingUser && !existingUser.isEmailVerified) {
+        await this.usersService.update(existingUser.id, { isEmailVerified: true });
+        const payload = { sub: existingUser.id, email: existingUser.email, isAdmin: false };
+        return { 
+          message: 'Email verified successfully. Welcome!',
+          access_token: this.jwtService.sign(payload),
+          user: { id: existingUser.id, email: existingUser.email, isAdmin: false }
+        };
+      } else if (existingAdmin && !existingAdmin.isEmailVerified) {
+        await this.adminService.update(existingAdmin.id, { isEmailVerified: true });
+        const payload = { sub: existingAdmin.id, email: existingAdmin.email, role: existingAdmin.role, isAdmin: true };
+        return { 
+          message: 'Email verified successfully. Welcome!',
+          access_token: this.jwtService.sign(payload),
+          user: { id: existingAdmin.id, email: existingAdmin.email, role: existingAdmin.role, isAdmin: true }
+        };
+             } else {
+         // Already verified
+         const user = existingUser || existingAdmin;
+         if (!user) {
+           throw new NotFoundException('User not found');
+         }
+         const payload = { 
+           sub: user.id, 
+           email: user.email, 
+           isAdmin: !!existingAdmin,
+           ...(existingAdmin && { role: existingAdmin.role })
+         };
+         return { 
+           message: 'Email is already verified. Welcome back!',
+           access_token: this.jwtService.sign(payload),
+           user: { 
+             id: user.id, 
+             email: user.email, 
+             isAdmin: !!existingAdmin,
+             ...(existingAdmin && { role: existingAdmin.role })
+           }
+         };
+       }
     }
 
-    if (admin && admin.isEmailVerified) {
-      // Admin already verified, return token
-      const payload = { sub: admin.id, email: admin.email, role: admin.role, isAdmin: true };
-      return { 
-        message: 'Email is already verified. Welcome back!',
-        access_token: this.jwtService.sign(payload),
-        user: { id: admin.id, email: admin.email, role: admin.role, isAdmin: true }
-      };
+    // Create new user/admin with registration data
+    if (verificationResult.registrationData) {
+      const { registrationData } = verificationResult;
+      
+      if (registrationData.isAdmin) {
+        const admin = await this.adminService.create({
+          ...registrationData,
+          isEmailVerified: true, // Mark as verified since OTP was verified
+        });
+        
+        const payload = { sub: admin.id, email: admin.email, role: admin.role, isAdmin: true };
+        return { 
+          message: 'Account created and email verified successfully. Welcome!',
+          access_token: this.jwtService.sign(payload),
+          user: { id: admin.id, email: admin.email, role: admin.role, isAdmin: true }
+        };
+      } else {
+        const user = await this.usersService.create({
+          ...registrationData,
+          isEmailVerified: true, // Mark as verified since OTP was verified
+        });
+        
+        const payload = { sub: user.id, email: user.email, isAdmin: false };
+        return { 
+          message: 'Account created and email verified successfully. Welcome!',
+          access_token: this.jwtService.sign(payload),
+          user: { id: user.id, email: user.email, isAdmin: false }
+        };
+      }
     }
 
-    if (user) {
-      await this.usersService.update(user.id, { isEmailVerified: true });
-      const payload = { sub: user.id, email: user.email, isAdmin: false };
-      return { 
-        message: 'Email verified successfully. Welcome!',
-        access_token: this.jwtService.sign(payload),
-        user: { id: user.id, email: user.email, isAdmin: false }
-      };
-    } else if (admin) {
-      await this.adminService.update(admin.id, { isEmailVerified: true });
-      const payload = { sub: admin.id, email: admin.email, role: admin.role, isAdmin: true };
-      return { 
-        message: 'Email verified successfully. Welcome!',
-        access_token: this.jwtService.sign(payload),
-        user: { id: admin.id, email: admin.email, role: admin.role, isAdmin: true }
-      };
-    }
-
-    // This should never be reached due to the earlier checks, but TypeScript requires it
-    throw new NotFoundException('User not found');
+    throw new BadRequestException('Invalid verification data');
   }
 
   async resendOTP(email: string, purpose: 'signup' | 'signin'): Promise<{ message: string }> {
@@ -209,7 +218,10 @@ export class AuthService {
   }
 
   async verifyResetOTP(email: string, otp: string): Promise<{ message: string }> {
-    await this.otpService.verifyOTP(email, otp);
+    const result = await this.otpService.verifyOTP(email, otp);
+    if (!result.isValid) {
+      throw new BadRequestException('Invalid OTP');
+    }
     return { message: 'OTP verified. You can now reset your password' };
   }
 

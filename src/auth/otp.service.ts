@@ -7,6 +7,7 @@ interface OtpData {
   otp: string;
   expiresAt: Date;
   attempts: number;
+  registrationData?: any; // Store registration data for signup
 }
 
 @Injectable()
@@ -18,15 +19,7 @@ export class OtpService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      // Mailtrap (for testing) - COMMENT OUT FOR PRODUCTION
-      // host: 'smtp.mailtrap.io',
-      // port: 2525,
-      // auth: {
-      //   user: '7670263d7d188f',
-      //   pass: '365ef6a5cc2dde',
-      // },
-
-      // Production email service (Gmail example)
+      // Production email service
       host: process.env.MAIL_HOST || 'smtp.gmail.com',
       port: Number(process.env.MAIL_PORT) || 587,
       secure: false, // true for 465, false for other ports
@@ -43,7 +36,7 @@ export class OtpService {
   }
 
   // Send OTP via email
-  async sendOTP(email: string, purpose: 'signup' | 'signin' | 'reset' = 'signup'): Promise<void> {
+  async sendOTP(email: string, purpose: 'signup' | 'signin' | 'reset' = 'signup', registrationData?: any): Promise<void> {
     try {
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + this.OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -54,6 +47,7 @@ export class OtpService {
         otp,
         expiresAt,
         attempts: 0,
+        registrationData, // Store registration data for signup
       });
 
       const subject = {
@@ -71,7 +65,7 @@ export class OtpService {
       });
 
       await this.transporter.sendMail({
-        from: process.env.FROM_EMAIL || 'no-reply@example.com',
+        from: `"No Reply" <${process.env.FROM_EMAIL}>`,
         to: email,
         subject,
         html: this.getEmailTemplate(otp, purpose)
@@ -85,7 +79,7 @@ export class OtpService {
   }
 
   // Verify OTP
-  async verifyOTP(email: string, otp: string): Promise<boolean> {
+  async verifyOTP(email: string, otp: string): Promise<{ isValid: boolean; registrationData?: any }> {
     const otpData = this.otpStorage.get(email);
 
     if (!otpData) {
@@ -107,8 +101,9 @@ export class OtpService {
       throw new UnauthorizedException('Invalid OTP');
     }
 
+    const registrationData = otpData.registrationData;
     this.otpStorage.delete(email);
-    return true;
+    return { isValid: true, registrationData };
   }
 
   // Email template
