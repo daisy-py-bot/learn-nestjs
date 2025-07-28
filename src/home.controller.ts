@@ -56,4 +56,13 @@ export class HomeController {
       feedback,
     };
   }
+
+  @Get('health')
+  async healthCheck() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    };
+  }
 } 

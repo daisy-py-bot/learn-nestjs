@@ -1,0 +1,42 @@
+name: uncommon-backend
+services:
+  - name: backend
+    source_dir: /
+    github:
+      repo: daisy-py-bot/learn-nestjs
+      branch: main
+    run_command: npm run start:prod
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        value: ${db.DATABASE_HOST}
+      - key: DB_PORT
+        value: ${db.DATABASE_PORT}
+      - key: DB_USERNAME
+        value: ${db.DATABASE_USER}
+      - key: DB_PASSWORD
+        value: ${db.DATABASE_PASSWORD}
+      - key: DB_NAME
+        value: ${db.DATABASE_NAME}
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
+      - key: MAIL_HOST
+        value: ${MAIL_HOST}
+      - key: MAIL_PORT
+        value: ${MAIL_PORT}
+      - key: MAIL_USER
+        value: ${MAIL_USER}
+      - key: MAIL_PASS
+        value: ${MAIL_PASS}
+      - key: FROM_EMAIL
+        value: ${FROM_EMAIL}
+
+databases:
+  - name: db
+    engine: PG
+    version: "15"
+    production: false 

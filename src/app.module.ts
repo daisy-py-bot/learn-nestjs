@@ -21,6 +21,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HomeController } from './home.controller';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -60,6 +61,6 @@ import { HomeController } from './home.controller';
     AuthModule,
     DashboardModule,
   ],
-  controllers: [HomeController],
+  controllers: [HomeController, HealthController],
 })
 export class AppModule {}
