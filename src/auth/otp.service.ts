@@ -18,11 +18,21 @@ export class OtpService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST || 'smtp.mailtrap.io',
-      port: Number(process.env.MAIL_PORT) || 2525,
+      // Mailtrap (for testing) - COMMENT OUT FOR PRODUCTION
+      // host: 'smtp.mailtrap.io',
+      // port: 2525,
+      // auth: {
+      //   user: '7670263d7d188f',
+      //   pass: '365ef6a5cc2dde',
+      // },
+
+      // Production email service (Gmail example)
+      host: process.env.MAIL_HOST || 'smtp.gmail.com',
+      port: Number(process.env.MAIL_PORT) || 587,
+      secure: false, // true for 465, false for other ports
       auth: {
-        user: process.env.MAIL_USER || 'your_mailtrap_user',
-        pass: process.env.MAIL_PASS || 'your_mailtrap_pass',
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
       },
     });
   }
