@@ -42,6 +42,9 @@ import {
   
     @Column({ type: 'timestamp', nullable: true })
     lastLogin: Date;
+
+    @Column({ default: false })
+    isEmailVerified: boolean;
     
   }
   

@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength, IsBoolean } from 'class-validator';
 import { AdminRole } from '../admin.entity';
 
 export class CreateAdminDto {
@@ -8,4 +8,5 @@ export class CreateAdminDto {
   password: string;
   role?: AdminRole;
   avatar?: string;
+  isEmailVerified?: boolean;
 }

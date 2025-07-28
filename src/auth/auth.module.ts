@@ -6,6 +6,7 @@ import { AdminModule } from 'src/admin/admin.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
+import { OtpService } from './otp.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
     }),
     ActivityLogsModule,
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, OtpService],
   controllers: [AuthController],
   exports: [AuthService],
 })

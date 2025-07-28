@@ -44,6 +44,9 @@ export class User{
     @Column({type: 'timestamp', nullable: true})
     lastlogin: Date;
 
+    @Column({ default: false })
+    isEmailVerified: boolean;
+
     @ManyToMany(() => Badge, (badge) => badge.users)
     @JoinTable()
     badges: Badge[];
