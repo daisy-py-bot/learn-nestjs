@@ -2,7 +2,7 @@ import { Controller, Post, Get, Body, Param, Patch, Delete, UseGuards, Req } fro
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { UsersService } from '../users/users.service';
 import { CertificatesService } from '../certificates/certificates.service';
 import { CoursesService } from '../courses/courses.service';
@@ -10,18 +10,9 @@ import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { addMonths, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { UserStatus } from '../users/user.entity';
 import { AdminRole } from './admin.entity';
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-
-// Simple SuperAdminGuard
-@Injectable()
-class SuperAdminGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest();
-    return req.user && req.user.role === 'super_admin';
-  }
-}
 
 @Controller('admins')
+@UseGuards(AdminAuthGuard)
 export class AdminController {
   constructor(
     private readonly adminsService: AdminService,
@@ -54,8 +45,8 @@ export class AdminController {
     // Total users
     const allUsers = await this.usersService.findAll();
     const totalUsers = allUsers.length;
-    const newSignups = allUsers.filter(u => u.createdAt >= startOfLastMonth && u.createdAt <= endOfLastMonth).length;
-    const prevSignups = allUsers.filter(u => u.createdAt >= startOfTwoMonthsAgo && u.createdAt <= endOfTwoMonthsAgo).length;
+    const newSignups = allUsers.filter(u => u.createdAt >= startOfThisMonth).length;
+    const prevSignups = allUsers.filter(u => u.createdAt >= startOfLastMonth && u.createdAt <= endOfLastMonth).length;
     const signupChange = prevSignups === 0 ? (newSignups > 0 ? '+100%' : 'No change from last month') : `${((newSignups - prevSignups) / prevSignups * 100).toFixed(0)}% from last month`;
 
     // Total users change
@@ -78,11 +69,12 @@ export class AdminController {
     const coursesPrevMonth = allCourses.filter(c => c.createdAt <= endOfTwoMonthsAgo).length;
     const courseChange = coursesPrevMonth === 0 ? (coursesLastMonth > 0 ? '+100%' : 'No change from last month') : `${((coursesLastMonth - coursesPrevMonth) / coursesPrevMonth * 100).toFixed(0)}% from last month`;
 
-    // Courses enrolled (last month)
+    // Courses enrolled (all time)
     const allEnrollments = await this.enrollmentsService.findAll();
-    const coursesEnrolledLastMonth = allEnrollments.filter(e => e.startedAt >= startOfLastMonth && e.startedAt <= endOfLastMonth).length;
-    const coursesEnrolledPrevMonth = allEnrollments.filter(e => e.startedAt >= startOfTwoMonthsAgo && e.startedAt <= endOfTwoMonthsAgo).length;
-    const enrolledChange = coursesEnrolledPrevMonth === 0 ? (coursesEnrolledLastMonth > 0 ? '+100%' : 'No change from last month') : `${((coursesEnrolledLastMonth - coursesEnrolledPrevMonth) / coursesEnrolledPrevMonth * 100).toFixed(0)}% from last month`;
+    
+    // Count unique courses with enrollments
+    const coursesEnrolled = new Set(allEnrollments.map(e => e.course.id)).size;
+    const enrolledChange = 'All time total';
 
     // Average course completion rate
     const completedEnrollments = allEnrollments.filter(e => e.status === 'completed');
@@ -98,7 +90,7 @@ export class AdminController {
       { title: 'New signups', value: newSignups, change: signupChange },
       { title: 'Certificates issued', value: certificatesIssued, change: certChange },
       { title: 'Total Courses', value: totalCourses, change: courseChange },
-      { title: 'Courses enrolled', value: coursesEnrolledLastMonth, change: enrolledChange },
+      { title: 'Courses enrolled', value: coursesEnrolled, change: enrolledChange },
       { title: 'Average course completion rate', value: `${avgCompletionRate}%`, change: completionChange },
     ];
   }
@@ -131,7 +123,6 @@ export class AdminController {
   }
 
   @Get('profile/:id')
-  // @UseGuards(JwtAuthGuard)
   async getProfile(@Param('id') id: string) {
     const admin = await this.adminsService.findOne(id);
     if (!admin) return null;

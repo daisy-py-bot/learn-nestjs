@@ -4,8 +4,6 @@ import { Admin } from './admin.entity';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { AdminAuthService } from './admin-auth.service';
-import { AdminAuthController } from './admin-auth.controller';
 import { UsersModule } from '../users/users.module';
 import { CertificatesModule } from '../certificates/certificates.module';
 import { CoursesModule } from '../courses/courses.module';
@@ -25,8 +23,8 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
     EnrollmentsModule,
     ActivityLogsModule,
   ],
-  providers: [AdminService, AdminAuthService],
-  controllers: [AdminController, AdminAuthController],
+  providers: [AdminService],
+  controllers: [AdminController],
   exports: [AdminService],
 })
 export class AdminModule {}

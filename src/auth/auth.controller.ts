@@ -12,8 +12,18 @@ export class AuthController {
     return this.authService.register(data);
   }
 
+  @Post('admin/register')
+  registerAdmin(@Body() data: RegisterDto) {
+    return this.authService.register({ ...data, isAdmin: true });
+  }
+
   @Post('login')
   login(@Body() data: LoginDto) {
     return this.authService.login(data);
+  }
+
+  @Post('admin/login')
+  adminLogin(@Body() data: LoginDto) {
+    return this.authService.adminLogin(data);
   }
 }

@@ -12,7 +12,7 @@ export class AdminService {
     private adminRepo: Repository<Admin>,
   ) {}
 
-  create(data: CreateAdminDto) {
+  async create(data: CreateAdminDto) {
     const admin = this.adminRepo.create(data);
     return this.adminRepo.save(admin);
   }
@@ -25,8 +25,11 @@ export class AdminService {
     return this.adminRepo.findOne({ where: { id } });
   }
 
-  findOneByEmail(email: string) {
-    return this.adminRepo.findOne({ where: { email } });
+  async findOneByEmail(email: string) {
+    console.log('Looking for admin with email:', email);
+    const admin = await this.adminRepo.findOne({ where: { email } });
+    console.log('Found admin:', admin);
+    return admin;
   }
 
   async update(id: string, updates: UpdateAdminDto) {
