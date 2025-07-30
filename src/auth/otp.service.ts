@@ -17,7 +17,17 @@ export class OtpService {
   private readonly OTP_EXPIRY_MINUTES = 10;
   private readonly MAX_ATTEMPTS = 3;
 
+  // constructor() {
+  //   sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+  // }
+
   constructor() {
+    console.log('=== DEBUG INFO ===');
+    console.log('API Key exists:', !!process.env.SENDGRID_API_KEY);
+    console.log('API Key length:', process.env.SENDGRID_API_KEY?.length);
+    console.log('FROM_EMAIL:', process.env.FROM_EMAIL);
+    console.log('==================');
+    
     sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
   }
 
