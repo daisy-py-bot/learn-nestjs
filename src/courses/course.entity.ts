@@ -5,18 +5,22 @@ import { Badge } from 'src/badges/badge.entity';
 import { Certificate } from 'src/certificates/certificate.entity';
 import { FinalAssessment } from 'src/final-assessments/final-assessment.entity';
 
-export enum CourseCategory{
-    CAREER_SKILLS = 'Career Skills',
-    MONEY_MATTERS = 'Money Matters',
-    CATEGORY_3 = 'Category_3',
-    CATEGORY_4 = 'Category_4',
-    CATEGORY_5 = 'Category_5',
-    ALL = 'All',
-    MOST_POPULAR = 'Most Popular',
-    COMMUNICATION_SKILLS = 'Communication Skills',
-    DIGITAL_TOOLS = 'Digital Tools',
-    PERSONAL_GROWTH = 'Personal Growth',
-    INTERVIEWS = 'Interviews',
+export enum CourseCategory {
+  CAREER_SKILLS = 'Career Skills',
+  MONEY_MATTERS = 'Money Matters',
+  COMMUNICATION_SKILLS = 'Communication Skills',
+  DIGITAL_TOOLS = 'Digital Tools',
+  PERSONAL_GROWTH = 'Personal Growth',
+  INTERVIEWS = 'Interviews',
+  LEADERSHIP = 'Leadership',
+  TEAMWORK = 'Teamwork & Collaboration',
+  TIME_MANAGEMENT = 'Time Management',
+  EMOTIONAL_INTELLIGENCE = 'Emotional Intelligence',
+  CRITICAL_THINKING = 'Critical Thinking',
+  PROBLEM_SOLVING = 'Problem Solving',
+  CREATIVITY = 'Creativity',
+  LEARNING_STRATEGIES = 'Learning Strategies',
+  ALL = 'All',
 
 }
 

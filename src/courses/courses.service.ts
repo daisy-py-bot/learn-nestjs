@@ -52,6 +52,7 @@ export class CoursesService {
 
     const course = this.courseRepo.create({
       ...data,
+      category: data.category as CourseCategory, // <-- fix: cast to enum
       createdBy: creator,
       badgeNames: data.badgeNames || [],
       badges,
@@ -64,6 +65,7 @@ export class CoursesService {
     // Create the course
     const course = this.courseRepo.create({
       ...data,
+      category: data.category as CourseCategory, // <-- fix: cast to enum
       modules: [],
     });
     await this.courseRepo.save(course);

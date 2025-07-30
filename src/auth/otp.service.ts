@@ -1,5 +1,5 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
+import { Injectable, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 
 interface OtpData {
@@ -12,22 +12,13 @@ interface OtpData {
 
 @Injectable()
 export class OtpService {
-  private transporter: nodemailer.Transporter;
+  private readonly logger = new Logger(OtpService.name);
   private otpStorage: Map<string, OtpData> = new Map();
   private readonly OTP_EXPIRY_MINUTES = 10;
   private readonly MAX_ATTEMPTS = 3;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      // Production email service
-      host: process.env.MAIL_HOST || 'smtp.gmail.com',
-      port: Number(process.env.MAIL_PORT) || 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
   }
 
   // Generate 6-digit OTP
@@ -36,7 +27,11 @@ export class OtpService {
   }
 
   // Send OTP via email
-  async sendOTP(email: string, purpose: 'signup' | 'signin' | 'reset' = 'signup', registrationData?: any): Promise<void> {
+  async sendOTP(
+    email: string,
+    purpose: 'signup' | 'signin' | 'reset' = 'signup',
+    registrationData?: any,
+  ): Promise<void> {
     try {
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + this.OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -50,31 +45,19 @@ export class OtpService {
         registrationData, // Store registration data for signup
       });
 
-      const subject = {
-        signup: 'Verify Your Email - Sign Up',
-        signin: 'Verify Your Email - Sign In',
-        reset: 'Reset Your Password'
-      }[purpose];
-
-      console.log('Sending OTP email to:', email);
-      console.log('Mail config:', {
-        host: process.env.MAIL_HOST,
-        port: process.env.MAIL_PORT,
-        user: process.env.MAIL_USER,
-        from: process.env.FROM_EMAIL
-      });
-
-      await this.transporter.sendMail({
-        from: `"No Reply" <${process.env.FROM_EMAIL}>`,
+      const msg = {
         to: email,
-        subject,
-        html: this.getEmailTemplate(otp, purpose)
-      });
+        from: process.env.FROM_EMAIL || 'no-reply@yourdomain.com',
+        subject: 'Your OTP Code',
+        text: `Your OTP is: ${otp}`,
+        html: `<p>Your OTP is: <strong>${otp}</strong></p>`,
+      };
 
-      console.log('OTP email sent successfully to:', email);
+      await sgMail.send(msg);
+      this.logger.log(`OTP email sent to: ${email}`);
     } catch (error) {
-      console.error('Error sending OTP email:', error);
-      throw new Error(`Failed to send OTP email: ${error.message}`);
+      this.logger.error('Error sending OTP email:', error);
+      throw new Error('Failed to send OTP email: ' + error.message);
     }
   }
 

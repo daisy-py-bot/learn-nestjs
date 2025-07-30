@@ -1,3 +1,5 @@
+import { CourseCategory } from '../course.entity';
+
 export enum LessonType {
   VIDEO = 'video',
   READING = 'reading',
@@ -26,20 +28,6 @@ export class CreateModuleWithLessonsDto {
   order: number;
   duration?: number;
   lessons: CreateLessonDto[];
-}
-
-export enum CourseCategory {
-  CAREER_SKILLS = 'Career Skills',
-  MONEY_MATTERS = 'Money Matters',
-  CATEGORY_3 = 'Category_3',
-  CATEGORY_4 = 'Category_4',
-  CATEGORY_5 = 'Category_5',
-  ALL = 'All',
-  MOST_POPULAR = 'Most Popular',
-  COMMUNICATION_SKILLS = 'Communication Skills',
-  DIGITAL_TOOLS = 'Digital Tools',
-  PERSONAL_GROWTH = 'Personal Growth',
-  INTERVIEWS = 'Interviews',
 }
 
 export enum CourseLevel {
