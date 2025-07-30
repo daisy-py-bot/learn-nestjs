@@ -37,15 +37,57 @@ export class OtpService {
   }
 
   // Send OTP via email
+  // async sendOTP(
+  //   email: string,
+  //   purpose: 'signup' | 'signin' | 'reset' = 'signup',
+  //   registrationData?: any,
+  // ): Promise<void> {
+  //   try {
+  //     const otp = this.generateOTP();
+  //     const expiresAt = new Date(Date.now() + this.OTP_EXPIRY_MINUTES * 60 * 1000);
+
+  //     // Store OTP in memory (use Redis/Database in production)
+  //     this.otpStorage.set(email, {
+  //       email,
+  //       otp,
+  //       expiresAt,
+  //       attempts: 0,
+  //       registrationData, // Store registration data for signup
+  //     });
+
+  //     const msg = {
+  //       to: email,
+  //       from: process.env.FROM_EMAIL || 'no-reply@yourdomain.com',
+  //       subject: 'Your OTP Code',
+  //       text: `Your OTP is: ${otp}`,
+  //       html: `<p>Your OTP is: <strong>${otp}</strong></p>`,
+  //     };
+
+  //     await sgMail.send(msg);
+  //     this.logger.log(`OTP email sent to: ${email}`);
+  //   } catch (error) {
+  //     this.logger.error('Error sending OTP email:', error);
+  //     throw new Error('Failed to send OTP email: ' + error.message);
+  //   }
+  // }
+
   async sendOTP(
     email: string,
     purpose: 'signup' | 'signin' | 'reset' = 'signup',
     registrationData?: any,
   ): Promise<void> {
     try {
+      // Add debug logs here
+      console.log('=== DEBUG INFO ===');
+      console.log('API Key exists:', !!process.env.SENDGRID_API_KEY);
+      console.log('API Key length:', process.env.SENDGRID_API_KEY?.length);
+      console.log('API Key starts with:', process.env.SENDGRID_API_KEY?.substring(0, 10));
+      console.log('FROM_EMAIL:', process.env.FROM_EMAIL);
+      console.log('==================');
+  
       const otp = this.generateOTP();
       const expiresAt = new Date(Date.now() + this.OTP_EXPIRY_MINUTES * 60 * 1000);
-
+  
       // Store OTP in memory (use Redis/Database in production)
       this.otpStorage.set(email, {
         email,
@@ -54,7 +96,7 @@ export class OtpService {
         attempts: 0,
         registrationData, // Store registration data for signup
       });
-
+  
       const msg = {
         to: email,
         from: process.env.FROM_EMAIL || 'no-reply@yourdomain.com',
@@ -62,7 +104,7 @@ export class OtpService {
         text: `Your OTP is: ${otp}`,
         html: `<p>Your OTP is: <strong>${otp}</strong></p>`,
       };
-
+  
       await sgMail.send(msg);
       this.logger.log(`OTP email sent to: ${email}`);
     } catch (error) {
