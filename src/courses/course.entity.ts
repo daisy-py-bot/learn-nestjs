@@ -4,25 +4,7 @@ import { Module } from 'src/modules/module.entity';
 import { Badge } from 'src/badges/badge.entity';
 import { Certificate } from 'src/certificates/certificate.entity';
 import { FinalAssessment } from 'src/final-assessments/final-assessment.entity';
-
-export enum CourseCategory {
-  CAREER_SKILLS = 'Career Skills',
-  MONEY_MATTERS = 'Money Matters',
-  COMMUNICATION_SKILLS = 'Communication Skills',
-  DIGITAL_TOOLS = 'Digital Tools',
-  PERSONAL_GROWTH = 'Personal Growth',
-  INTERVIEWS = 'Interviews',
-  LEADERSHIP = 'Leadership',
-  TEAMWORK = 'Teamwork & Collaboration',
-  TIME_MANAGEMENT = 'Time Management',
-  EMOTIONAL_INTELLIGENCE = 'Emotional Intelligence',
-  CRITICAL_THINKING = 'Critical Thinking',
-  PROBLEM_SOLVING = 'Problem Solving',
-  CREATIVITY = 'Creativity',
-  LEARNING_STRATEGIES = 'Learning Strategies',
-  ALL = 'All',
-
-}
+import { CourseCategory } from './course-category.entity';
 
 export enum CourseLevel {
   BEGINNER = 'beginner',
@@ -39,7 +21,7 @@ export class Course{
     @Column()
     title: string;
 
-    @Column({type: 'enum', enum:CourseCategory})
+    @ManyToOne(() => CourseCategory, { nullable: false })
     category: CourseCategory;
 
     @Column('text')

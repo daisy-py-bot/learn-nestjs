@@ -2,12 +2,13 @@ import { Controller, Get } from '@nestjs/common';
 import { CoursesService } from './courses/courses.service';
 import { EnrollmentsService } from './enrollments/enrollments.service';
 import { FeedbackService } from './feedback/feedback.service';
-import { CourseCategory } from './courses/course.entity';
+import { CategoriesService } from './courses/categories.service';
 
 @Controller('home')
 export class HomeController {
   constructor(
     private readonly coursesService: CoursesService,
+    private readonly categoriesService: CategoriesService,
     private readonly enrollmentsService: EnrollmentsService,
     private readonly feedbackService: FeedbackService,
   ) {}
@@ -41,7 +42,8 @@ export class HomeController {
     // Number of courses
     const numberOfCourses = courses.length;
     // Number of course categories
-    const numberOfCategories = Object.keys(CourseCategory).length;
+    const categories = await this.categoriesService.findAll();
+    const numberOfCategories = categories.length;
     // Number of students enrolled (unique users in enrollments)
     const enrollments = await this.enrollmentsService.findAll();
     const uniqueStudentIds = new Set(enrollments.map(e => e.user.id));

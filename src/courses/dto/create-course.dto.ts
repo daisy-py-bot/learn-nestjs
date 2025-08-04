@@ -1,12 +1,11 @@
-import { IsNotEmpty, IsEnum, IsInt, Min } from 'class-validator';
-import { CourseCategory } from '../course.entity';
+import { IsNotEmpty, IsString, IsInt, Min, IsUUID } from 'class-validator';
 
 export class CreateCourseDto {
   @IsNotEmpty()
   title: string;
 
-  @IsEnum(CourseCategory)
-  category: CourseCategory;
+  @IsUUID()
+  categoryId: string;
 
   @IsNotEmpty()
   description: string;

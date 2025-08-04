@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Param, Body, Patch, Delete, Query} from '@nestjs/common';
 import { CoursesService } from './courses.service';
+import { CategoriesService } from './categories.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
@@ -9,6 +10,7 @@ import { CreateCourseWithModulesLessonsDto } from './dto/create-course-with-modu
 export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService,
+    private readonly categoriesService: CategoriesService,
     private readonly enrollmentsService: EnrollmentsService,
   ) {}
 
@@ -43,8 +45,8 @@ export class CoursesController {
   }
 
   @Get('search/by-category')
-  findCoursesByCategory(@Query('category') category: string, @Query('userId') userId?: string) {
-    return this.coursesService.findCoursesByCategory(category, userId);
+  findCoursesByCategory(@Query('categoryId') categoryId: string, @Query('userId') userId?: string) {
+    return this.coursesService.findCoursesByCategory(categoryId, userId);
   }
 
   @Get('search/most-popular')
@@ -92,8 +94,9 @@ export class CoursesController {
 
   @Get('categories')
   getCategories() {
-    // Return all course categories as an array
-    return Object.values(require('./course.entity').CourseCategory);
+    // This endpoint is now handled by the categories controller
+    // Keeping for backward compatibility but redirecting to categories service
+    return this.categoriesService.findActive();
   }
 
   @Get(':id')

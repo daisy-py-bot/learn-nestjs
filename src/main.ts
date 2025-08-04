@@ -9,8 +9,7 @@ async function bootstrap() {
 
   // Enable CORS to allow frontend (localhost:3000) to talk to backend (localhost:3001)
   app.enableCors({
-    // origin: 'http://localhost:3000', // frontend URL
-    origin: 'https://uncommonupskillingfrontend.vercel.app',
+    origin: ['http://localhost:3000', 'https://uncommonupskillingfrontend.vercel.app'], // frontend URL
     credentials: true, // if you use cookies or authorization headers that need credentials
   });
 

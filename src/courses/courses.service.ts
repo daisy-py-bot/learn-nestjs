@@ -8,7 +8,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { getRepository } from 'typeorm';
 import { ProgressService } from 'src/progress/progress.service';
 import { Badge } from 'src/badges/badge.entity';
-import { CourseCategory } from './course.entity';
+import { CourseCategory } from './course-category.entity';
 import { QuizzesService } from 'src/quizzes/quizzes.service';
 import { FinalAssessmentsService } from 'src/final-assessments/final-assessments.service';
 import { EnrollmentsService } from 'src/enrollments/enrollments.service';
@@ -29,6 +29,8 @@ export class CoursesService {
     private moduleRepo: Repository<Module>,
     @InjectRepository(Lesson)
     private lessonRepo: Repository<Lesson>,
+    @InjectRepository(CourseCategory)
+    private categoryRepo: Repository<CourseCategory>,
     private progressService: ProgressService,
     private quizzesService: QuizzesService,
     private finalAssessmentsService: FinalAssessmentsService,
@@ -43,6 +45,11 @@ export class CoursesService {
       throw new Error('Creator (User) not found');
     }
 
+    const category = await this.categoryRepo.findOne({ where: { id: data.categoryId } });
+    if (!category) {
+      throw new Error('Category not found');
+    }
+
     let badges: Badge[] = [];
     if (data.badgeIds && data.badgeIds.length > 0) {
       badges = await this.courseRepo.manager.getRepository(Badge).findByIds(data.badgeIds);
@@ -52,7 +59,7 @@ export class CoursesService {
 
     const course = this.courseRepo.create({
       ...data,
-      category: data.category as CourseCategory, // <-- fix: cast to enum
+      category,
       createdBy: creator,
       badgeNames: data.badgeNames || [],
       badges,
@@ -62,10 +69,35 @@ export class CoursesService {
   }
 
   async createCourseWithModulesAndLessons(data: CreateCourseWithModulesLessonsDto) {
+    // Get the category (use default if not provided)
+    let category;
+    if (data.categoryId) {
+      category = await this.categoryRepo.findOne({ where: { id: data.categoryId } });
+      if (!category) {
+        throw new Error('Category not found');
+      }
+    } else {
+      // Use the first available category as default
+      category = await this.categoryRepo.findOne({ 
+        where: { isActive: true },
+        order: { order: 'ASC' }
+      });
+      if (!category) {
+        throw new Error('No active categories found. Please create a category first.');
+      }
+    }
+
+    // Get the creator
+    const creator = await this.userRepo.findOne({ where: { id: data.createdById } });
+    if (!creator) {
+      throw new Error('Creator (User) not found');
+    }
+
     // Create the course
     const course = this.courseRepo.create({
       ...data,
-      category: data.category as CourseCategory, // <-- fix: cast to enum
+      category,
+      createdBy: creator,
       modules: [],
     });
     await this.courseRepo.save(course);
@@ -452,13 +484,16 @@ export class CoursesService {
     return courses;
   }
 
-  async findCoursesByCategory(category: string, userId?: string) {
+  async findCoursesByCategory(categoryId: string, userId?: string) {
     let courses;
-    if (category === CourseCategory.ALL) {
-      courses = await this.courseRepo.find({ relations: ['createdBy'] });
+    if (categoryId === 'all') {
+      courses = await this.courseRepo.find({ relations: ['createdBy', 'category'] });
     } else {
-      courses = await this.courseRepo.find({ where: { category: category as CourseCategory }, relations: ['createdBy'] });
-  }
+      courses = await this.courseRepo.find({ 
+        where: { category: { id: categoryId } }, 
+        relations: ['createdBy', 'category'] 
+      });
+    }
     if (userId) {
       const enrollments = await this.enrollmentsService.findByUser(userId);
       const enrolledCourseIds = new Set(enrollments.map(e => e.course.id));

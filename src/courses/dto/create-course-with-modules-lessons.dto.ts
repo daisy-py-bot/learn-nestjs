@@ -1,5 +1,3 @@
-import { CourseCategory } from '../course.entity';
-
 export enum LessonType {
   VIDEO = 'video',
   READING = 'reading',
@@ -38,7 +36,7 @@ export enum CourseLevel {
 
 export class CreateCourseWithModulesLessonsDto {
   title: string;
-  category: CourseCategory;
+  categoryId?: string;
   description: string;
   duration: number;
   createdById?: string;
