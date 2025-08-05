@@ -130,7 +130,17 @@ export class CoursesService {
   }
 
   findAll() {
-    return this.courseRepo.find({ relations: ['modules', 'modules.lessons', 'createdBy'] });
+    return this.courseRepo.find({ 
+      relations: ['modules', 'modules.lessons', 'createdBy'],
+      order: {
+        modules: {
+          order: 'ASC',
+          lessons: {
+            order: 'ASC'
+          }
+        }
+      }
+    });
   }
 
   findOne(id: string) {
@@ -287,40 +297,46 @@ export class CoursesService {
       userProgress = await this.progressService.getCourseProgress(userId, courseId);
     }
 
-    // Map modules with progress information and quizzes
-    const modules = await Promise.all(course.modules.map(async (mod) => {
-      // Calculate total duration from lessons
-      const totalLessonDuration = (mod.lessons || []).reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
-      // For each quiz, check if completed by user
-      const quizzes = await Promise.all((mod.quizzes || []).map(async (quiz) => {
-        let completed = false;
-        if (userId) {
-          const submission = await this.quizzesService['quizSubmissionRepo'].findOne({
-            where: { user: { id: userId }, quiz: { id: quiz.id } },
-          });
-          completed = !!submission;
-        }
-        return { ...quiz, completed };
+    // Map modules with progress information and quizzes, sorted by order
+    const modules = await Promise.all(course.modules
+      .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort modules by order
+      .map(async (mod) => {
+        // Calculate total duration from lessons
+        const totalLessonDuration = (mod.lessons || []).reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+        // For each quiz, check if completed by user
+        const quizzes = await Promise.all((mod.quizzes || []).map(async (quiz) => {
+          let completed = false;
+          if (userId) {
+            const submission = await this.quizzesService['quizSubmissionRepo'].findOne({
+              where: { user: { id: userId }, quiz: { id: quiz.id } },
+            });
+            completed = !!submission;
+          }
+          return { ...quiz, completed };
+        }));
+        return {
+          id: mod.id,
+          title: mod.title,
+          order: mod.order || 0,
+          duration: totalLessonDuration ? `${totalLessonDuration} min` : '0 min',
+          locked: false, // You can add logic for locking based on prerequisites
+          lessons: (mod.lessons || [])
+            .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort lessons by order
+            .map((lesson) => {
+              const progress = userProgress.find(p => p.lessonId === lesson.id);
+              return {
+                id: lesson.id,
+                title: lesson.title,
+                order: lesson.order || 0,
+                duration: lesson.duration ? `${lesson.duration} min` : '0 min',
+                type: lesson.type || 'video',
+                completed: progress?.isCompleted || false,
+                current: lesson.id === currentLessonIdToUse,
+              };
+            }),
+          quizzes,
+        };
       }));
-      return {
-        id: mod.id,
-        title: mod.title,
-        duration: totalLessonDuration ? `${totalLessonDuration} min` : '0 min',
-        locked: false, // You can add logic for locking based on prerequisites
-        lessons: (mod.lessons || []).map((lesson) => {
-          const progress = userProgress.find(p => p.lessonId === lesson.id);
-          return {
-            id: lesson.id,
-            title: lesson.title,
-            duration: lesson.duration ? `${lesson.duration} min` : '0 min',
-            type: lesson.type || 'video',
-            completed: progress?.isCompleted || false,
-            current: lesson.id === currentLessonIdToUse,
-          };
-        }),
-        quizzes,
-      };
-    }));
 
     // Fetch badges by badgeNames
     const badges = await this.getBadgesByNames(course.badgeNames || []);
@@ -392,39 +408,43 @@ export class CoursesService {
     });
     if (!course) throw new NotFoundException('Course not found');
 
-    // Map modules with all content (no user-specific data)
-    const modules = course.modules.map((mod) => {
-      // Calculate total duration from lessons
-      const totalLessonDuration = (mod.lessons || []).reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
-      
-      return {
-        id: mod.id,
-        title: mod.title,
-        description: mod.description,
-        order: mod.order,
-        duration: totalLessonDuration ? `${totalLessonDuration} min` : '0 min',
-        lessons: (mod.lessons || []).map((lesson) => ({
-          id: lesson.id,
-          title: lesson.title,
-          content: lesson.content,
-          mediaUrl: lesson.mediaUrl,
-          videoUrl: lesson.videoUrl,
-          transcript: lesson.transcript,
-          notes: lesson.notes,
-          resources: lesson.resources,
-          duration: lesson.duration ? `${lesson.duration} min` : '0 min',
-          type: lesson.type || 'video',
-          order: lesson.order,
-        })),
-        quizzes: (mod.quizzes || []).map((quiz) => ({
-          id: quiz.id,
-          title: quiz.title,
-          questions: quiz.questions,
-          unlockAfter: quiz.unlockAfter,
-          duration: quiz.duration,
-        })),
-      };
-    });
+    // Map modules with all content (no user-specific data), sorted by order
+    const modules = course.modules
+      .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort modules by order
+      .map((mod) => {
+        // Calculate total duration from lessons
+        const totalLessonDuration = (mod.lessons || []).reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+        
+        return {
+          id: mod.id,
+          title: mod.title,
+          description: mod.description,
+          order: mod.order || 0,
+          duration: totalLessonDuration ? `${totalLessonDuration} min` : '0 min',
+          lessons: (mod.lessons || [])
+            .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort lessons by order
+            .map((lesson) => ({
+              id: lesson.id,
+              title: lesson.title,
+              content: lesson.content,
+              mediaUrl: lesson.mediaUrl,
+              videoUrl: lesson.videoUrl,
+              transcript: lesson.transcript,
+              notes: lesson.notes,
+              resources: lesson.resources,
+              duration: lesson.duration ? `${lesson.duration} min` : '0 min',
+              type: lesson.type || 'video',
+              order: lesson.order || 0,
+            })),
+          quizzes: (mod.quizzes || []).map((quiz) => ({
+            id: quiz.id,
+            title: quiz.title,
+            questions: quiz.questions,
+            unlockAfter: quiz.unlockAfter,
+            duration: quiz.duration,
+          })),
+        };
+      });
 
     // Fetch badges by badgeNames
     const badges = await this.getBadgesByNames(course.badgeNames || []);
@@ -598,9 +618,14 @@ export class CoursesService {
     const course = await this.courseRepo.findOne({
       where: { id: courseId },
       relations: ['modules'],
+      order: {
+        modules: {
+          order: 'ASC'
+        }
+      }
     });
     if (!course) throw new NotFoundException('Course not found');
-    return course.modules;
+    return course.modules.sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
   private async updateLastAccessedAt(userId: string, courseId: string) {
