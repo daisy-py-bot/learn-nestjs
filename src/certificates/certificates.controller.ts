@@ -14,7 +14,7 @@ export class CertificatesController {
   @Post('generate')
   async generateCertificate(@Body() dto: { userId: string; courseId: string }) {
     // Generate a dummy certificate URL
-    const certificateUrl = `https://dummy-certs.com/certificate/${dto.userId}-${dto.courseId}`;
+    const certificateUrl = `https://www.canva.com/design/DAGvTqXV_Z0/4Z3tPZLjbjbw37-7K5havg/view?utm_content=DAGvTqXV_Z0&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hccc30a23ea/${dto.userId}-${dto.courseId}`;
     const cert = await this.certService.issueCertificate({
       userId: dto.userId,
       courseId: dto.courseId,

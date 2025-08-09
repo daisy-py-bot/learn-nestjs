@@ -17,6 +17,7 @@ import { Module } from 'src/modules/module.entity';
 import { Lesson } from 'src/lessons/lesson.entity';
 import { CreateCourseWithModulesLessonsDto, CreateModuleWithLessonsDto, CreateLessonDto } from './dto/create-course-with-modules-lessons.dto';
 import { FeedbackService } from 'src/feedback/feedback.service';
+import { UpdateCourseWithModulesLessonsDto, UpdateModuleWithLessonsDto, UpdateLessonDto } from './dto/update-course-with-modules-lessons.dto';
 
 @Injectable()
 export class CoursesService {
@@ -638,6 +639,150 @@ export class CoursesService {
       // Silently handle errors - user might not be enrolled or other issues
       console.log('Could not update lastAccessedAt:', error.message);
     }
+  }
+
+  async updateCourseWithModulesAndLessons(
+    courseId: string,
+    data: UpdateCourseWithModulesLessonsDto,
+  ) {
+    const course = await this.courseRepo.findOne({
+      where: { id: courseId },
+      relations: ['modules', 'modules.lessons', 'badges', 'category', 'createdBy'],
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    // Update simple course fields
+    if (data.title !== undefined) course.title = data.title;
+    if (data.description !== undefined) course.description = data.description;
+    if (data.duration !== undefined) course.duration = data.duration as number;
+    if (data.thumbnailUrl !== undefined) course.thumbnailUrl = data.thumbnailUrl as string;
+    if (data.isPublished !== undefined) course.isPublished = !!data.isPublished;
+    if (data.objectives !== undefined) course.objectives = data.objectives || [];
+    if (data.searchTags !== undefined) course.searchTags = data.searchTags || [];
+    if (data.level !== undefined) course.level = data.level;
+    if (data.hasCertificate !== undefined) course.hasCertificate = !!data.hasCertificate;
+    if (data.badgeNames !== undefined) course.badgeNames = data.badgeNames || [];
+
+    if (data.categoryId) {
+      const category = await this.categoryRepo.findOne({ where: { id: data.categoryId } });
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+      course.category = category;
+    }
+
+    if (data.createdById) {
+      const creator = await this.userRepo.findOne({ where: { id: data.createdById } });
+      if (!creator) {
+        throw new NotFoundException('Creator (User) not found');
+      }
+      course.createdBy = creator;
+    }
+
+    if (data.badgeIds && data.badgeIds.length > 0) {
+      const badges = await this.courseRepo.manager.getRepository(Badge).findByIds(data.badgeIds);
+      course.badges = badges;
+    }
+
+    // Handle modules and lessons upsert if provided
+    if (data.modules) {
+      const existingModulesById = new Map<string, Module>();
+      for (const m of course.modules || []) existingModulesById.set(m.id, m);
+
+      const incomingModuleIds = new Set<string>();
+      for (const mod of data.modules) {
+        let moduleEntity: Module | undefined;
+        if (mod.id && existingModulesById.has(mod.id)) {
+          // Update existing module
+          moduleEntity = existingModulesById.get(mod.id)!;
+          if (mod.title !== undefined) moduleEntity.title = mod.title as string;
+          if (mod.description !== undefined) moduleEntity.description = mod.description as string;
+          if (mod.order !== undefined) moduleEntity.order = mod.order as number;
+          if (mod.duration !== undefined) moduleEntity.duration = mod.duration as number;
+          await this.moduleRepo.save(moduleEntity);
+        } else {
+          // Create new module
+          moduleEntity = this.moduleRepo.create({
+            course,
+            title: mod.title || 'Untitled Module',
+            description: mod.description || '',
+            order: (mod.order ?? ((course.modules?.length || 0) + 1)) as number,
+            duration: mod.duration,
+            lessons: [],
+          });
+          await this.moduleRepo.save(moduleEntity);
+        }
+        if (moduleEntity.id) incomingModuleIds.add(moduleEntity.id);
+
+        // Lessons upsert under this module
+        if (mod.lessons) {
+          const existingLessonsById = new Map<string, Lesson>();
+          for (const l of moduleEntity.lessons || []) existingLessonsById.set(l.id, l);
+          const incomingLessonIds = new Set<string>();
+
+          for (const lesson of mod.lessons) {
+            let lessonEntity: Lesson | undefined;
+            if (lesson.id && existingLessonsById.has(lesson.id)) {
+              lessonEntity = existingLessonsById.get(lesson.id)!;
+              if (lesson.title !== undefined) lessonEntity.title = lesson.title as string;
+              if (lesson.content !== undefined) lessonEntity.content = lesson.content as string;
+              if (lesson.mediaUrl !== undefined) lessonEntity.mediaUrl = lesson.mediaUrl as string;
+              if (lesson.videoUrl !== undefined) lessonEntity.videoUrl = lesson.videoUrl as string;
+              if (lesson.transcript !== undefined) lessonEntity.transcript = lesson.transcript || null;
+              if (lesson.notes !== undefined) lessonEntity.notes = lesson.notes || null;
+              if (lesson.resources !== undefined) lessonEntity.resources = lesson.resources || null;
+              if (lesson.duration !== undefined) lessonEntity.duration = lesson.duration as number;
+              if (lesson.type !== undefined) lessonEntity.type = lesson.type as any;
+              if (lesson.order !== undefined) lessonEntity.order = lesson.order as number;
+              await this.lessonRepo.save(lessonEntity);
+            } else {
+              // Create new lesson
+              lessonEntity = this.lessonRepo.create({
+                module: moduleEntity,
+                title: lesson.title || 'Untitled Lesson',
+                content: lesson.content || '',
+                mediaUrl: lesson.mediaUrl,
+                videoUrl: (lesson as any).videoUrl,
+                transcript: lesson.transcript,
+                notes: lesson.notes,
+                resources: lesson.resources,
+                duration: lesson.duration,
+                type: lesson.type,
+                order: (lesson.order ?? (((moduleEntity.lessons?.length || 0) + 1))) as number,
+              });
+              await this.lessonRepo.save(lessonEntity);
+            }
+            if (lessonEntity.id) incomingLessonIds.add(lessonEntity.id);
+          }
+
+          // Delete lessons that are not present in the incoming payload
+          const lessonsToDelete = (moduleEntity.lessons || []).filter(l => !incomingLessonIds.has(l.id));
+          if (lessonsToDelete.length > 0) {
+            await this.lessonRepo.remove(lessonsToDelete);
+          }
+
+          // Refresh lessons on module entity for subsequent operations
+          moduleEntity.lessons = await this.lessonRepo.find({ where: { module: { id: moduleEntity.id } } });
+        }
+      }
+
+      // Delete modules that are not present in the incoming payload
+      const modulesToDelete = (course.modules || []).filter(m => !incomingModuleIds.has(m.id));
+      if (modulesToDelete.length > 0) {
+        await this.moduleRepo.remove(modulesToDelete);
+      }
+
+      // Refresh modules on course
+      course.modules = await this.moduleRepo.find({ where: { course: { id: course.id } }, relations: ['lessons'] });
+    }
+
+    // Save course with updated relations
+    await this.courseRepo.save(course);
+
+    return this.courseRepo.findOne({
+      where: { id: course.id },
+      relations: ['modules', 'modules.lessons', 'badges', 'category', 'createdBy'],
+    });
   }
 
 
