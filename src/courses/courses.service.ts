@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Course } from './course.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { User } from 'src/users/user.entity';
+import { Admin } from 'src/admin/admin.entity';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { getRepository } from 'typeorm';
 import { ProgressService } from 'src/progress/progress.service';
@@ -26,6 +27,8 @@ export class CoursesService {
     private courseRepo: Repository<Course>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(Admin)
+    private adminRepo: Repository<Admin>,
     @InjectRepository(Module)
     private moduleRepo: Repository<Module>,
     @InjectRepository(Lesson)
@@ -40,10 +43,10 @@ export class CoursesService {
   ) {}
 
   async create(data: CreateCourseDto) {
-    const creator = await this.userRepo.findOne({ where: { id: data.createdById } });
-
-    if (!creator) {
-      throw new Error('Creator (User) not found');
+    // Only admins can create courses
+    const admin = await this.adminRepo.findOne({ where: { id: data.createdById } });
+    if (!admin) {
+      throw new Error('Only admins can create courses. Creator (Admin) not found');
     }
 
     const category = await this.categoryRepo.findOne({ where: { id: data.categoryId } });
@@ -61,7 +64,7 @@ export class CoursesService {
     const course = this.courseRepo.create({
       ...data,
       category,
-      createdBy: creator,
+      createdByAdmin: admin,
       badgeNames: data.badgeNames || [],
       badges,
     });
@@ -88,17 +91,17 @@ export class CoursesService {
       }
     }
 
-    // Get the creator
-    const creator = await this.userRepo.findOne({ where: { id: data.createdById } });
-    if (!creator) {
-      throw new Error('Creator (User) not found');
+    // Only admins can create courses
+    const admin = await this.adminRepo.findOne({ where: { id: data.createdById } });
+    if (!admin) {
+      throw new Error('Only admins can create courses. Creator (Admin) not found');
     }
 
     // Create the course
     const course = this.courseRepo.create({
       ...data,
       category,
-      createdBy: creator,
+      createdByAdmin: admin,
       modules: [],
     });
     await this.courseRepo.save(course);
@@ -132,7 +135,7 @@ export class CoursesService {
 
   findAll() {
     return this.courseRepo.find({ 
-      relations: ['modules', 'modules.lessons', 'createdBy'],
+      relations: ['modules', 'modules.lessons', 'createdByAdmin', 'createdByUser'],
       order: {
         modules: {
           order: 'ASC',
@@ -147,7 +150,7 @@ export class CoursesService {
   findOne(id: string) {
     return this.courseRepo.findOne({
       where: { id },
-      relations: ['createdBy'],
+      relations: ['createdByAdmin', 'createdByUser'],
     });
   }
 
@@ -238,7 +241,8 @@ export class CoursesService {
         'modules.quizzes',
         'badges',
         'finalAssessments',
-        'createdBy',
+        'createdByAdmin',
+        'createdByUser',
       ],
     });
     if (!course) throw new NotFoundException('Course not found');
@@ -373,10 +377,10 @@ export class CoursesService {
       currentLesson,
       modules,
       objectives: course.objectives || [],
-      instructor: course.createdBy ? {
-        avatar: course.createdBy.avatarUrl || '',
-        name: `${course.createdBy.firstname} ${course.createdBy.lastname}`,
-        bio: course.createdBy.bio || '',
+      instructor: this.getCourseCreator(course) ? {
+        avatar: (this.getCourseCreator(course) as any).avatarUrl || '',
+        name: `${this.getCourseCreator(course).firstname} ${this.getCourseCreator(course).lastname}`,
+        bio: (this.getCourseCreator(course) as any).bio || '',
       } : null,
       rewards: {
         certificate: course.hasCertificate ? 'Certificate of Completion' : '',
@@ -404,7 +408,8 @@ export class CoursesService {
         'modules.quizzes',
         'badges',
         'finalAssessments',
-        'createdBy',
+        'createdByAdmin',
+        'createdByUser',
       ],
     });
     if (!course) throw new NotFoundException('Course not found');
@@ -462,12 +467,12 @@ export class CoursesService {
       modules,
       objectives: course.objectives || [],
       searchTags: course.searchTags || [],
-      instructor: course.createdBy ? {
-        id: course.createdBy.id,
-        name: `${course.createdBy.firstname} ${course.createdBy.lastname}`,
-        email: course.createdBy.email,
-        bio: course.createdBy.bio || '',
-        avatar: course.createdBy.avatarUrl || '',
+      instructor: this.getCourseCreator(course) ? {
+        id: this.getCourseCreator(course).id,
+        name: `${this.getCourseCreator(course).firstname} ${this.getCourseCreator(course).lastname}`,
+        email: this.getCourseCreator(course).email,
+        bio: (this.getCourseCreator(course) as any).bio || '',
+        avatar: (this.getCourseCreator(course) as any).avatarUrl || '',
       } : null,
       rewards: {
         certificate: course.hasCertificate ? 'Certificate of Completion' : '',
@@ -508,11 +513,11 @@ export class CoursesService {
   async findCoursesByCategory(categoryId: string, userId?: string) {
     let courses;
     if (categoryId === 'all') {
-      courses = await this.courseRepo.find({ relations: ['createdBy', 'category'] });
+      courses = await this.courseRepo.find({ relations: ['createdByAdmin', 'createdByUser', 'category'] });
     } else {
       courses = await this.courseRepo.find({ 
         where: { category: { id: categoryId } }, 
-        relations: ['createdBy', 'category'] 
+        relations: ['createdByAdmin', 'createdByUser', 'category'] 
       });
     }
     if (userId) {
@@ -629,6 +634,10 @@ export class CoursesService {
     return course.modules.sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
+  private getCourseCreator(course: Course) {
+    return course.createdByAdmin || course.createdByUser;
+  }
+
   private async updateLastAccessedAt(userId: string, courseId: string) {
     try {
       const enrollment = await this.enrollmentsService.findByUserAndCourse(userId, courseId);
@@ -647,7 +656,7 @@ export class CoursesService {
   ) {
     const course = await this.courseRepo.findOne({
       where: { id: courseId },
-      relations: ['modules', 'modules.lessons', 'badges', 'category', 'createdBy'],
+      relations: ['modules', 'modules.lessons', 'badges', 'category', 'createdByAdmin', 'createdByUser'],
     });
     if (!course) throw new NotFoundException('Course not found');
 
@@ -672,11 +681,11 @@ export class CoursesService {
     }
 
     if (data.createdById) {
-      const creator = await this.userRepo.findOne({ where: { id: data.createdById } });
-      if (!creator) {
-        throw new NotFoundException('Creator (User) not found');
+      const admin = await this.adminRepo.findOne({ where: { id: data.createdById } });
+      if (!admin) {
+        throw new NotFoundException('Creator (Admin) not found');
       }
-      course.createdBy = creator;
+      course.createdByAdmin = admin;
     }
 
     if (data.badgeIds && data.badgeIds.length > 0) {
@@ -781,7 +790,7 @@ export class CoursesService {
 
     return this.courseRepo.findOne({
       where: { id: course.id },
-      relations: ['modules', 'modules.lessons', 'badges', 'category', 'createdBy'],
+      relations: ['modules', 'modules.lessons', 'badges', 'category', 'createdByAdmin', 'createdByUser'],
     });
   }
 

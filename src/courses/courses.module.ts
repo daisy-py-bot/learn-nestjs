@@ -7,6 +7,7 @@ import { CategoriesService } from './categories.service';
 import { CoursesController } from './courses.controller';
 import { CategoriesController } from './categories.controller';
 import { User } from 'src/users/user.entity';
+import { Admin } from 'src/admin/admin.entity';
 import { Module as CourseModuleEntity } from '../modules/module.entity';
 import { Lesson } from '../lessons/lesson.entity';
 import { ProgressModule } from 'src/progress/progress.module';
@@ -17,7 +18,7 @@ import { EnrollmentsModule } from 'src/enrollments/enrollments.module';
 import { FeedbackModule } from 'src/feedback/feedback.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Course, CourseCategory, User, CourseModuleEntity, Lesson]), ProgressModule, QuizzesModule, FinalAssessmentsModule, CertificatesModule, EnrollmentsModule, FeedbackModule],
+  imports: [TypeOrmModule.forFeature([Course, CourseCategory, User, Admin, CourseModuleEntity, Lesson]), ProgressModule, QuizzesModule, FinalAssessmentsModule, CertificatesModule, EnrollmentsModule, FeedbackModule],
   providers: [CoursesService, CategoriesService],
   controllers: [CoursesController, CategoriesController],
   exports: [CoursesService, CategoriesService],

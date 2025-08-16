@@ -1,5 +1,6 @@
 import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, ManyToMany, JoinTable, OneToMany} from 'typeorm'
 import { User } from 'src/users/user.entity'
+import { Admin } from 'src/admin/admin.entity'
 import { Module } from 'src/modules/module.entity';
 import { Badge } from 'src/badges/badge.entity';
 import { Certificate } from 'src/certificates/certificate.entity';
@@ -30,8 +31,11 @@ export class Course{
     @Column('int')
     duration: number; //minutes
 
-    @ManyToOne(() => User)
-    createdBy: User;
+    @ManyToOne(() => User, { nullable: true })
+    createdByUser: User;
+
+    @ManyToOne(() => Admin, { nullable: true })
+    createdByAdmin: Admin;
 
     @Column({nullable:true})
     thumbnailUrl: string;
