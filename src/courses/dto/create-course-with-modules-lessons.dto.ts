@@ -1,3 +1,5 @@
+import { IsString, IsOptional, IsNumber, IsArray, IsUUID, IsEnum, IsBoolean } from 'class-validator';
+
 export enum LessonType {
   VIDEO = 'video',
   READING = 'reading',
@@ -65,8 +67,6 @@ export enum CourseLevel {
   INTERMEDIATE = 'intermediate',
   ADVANCED = 'advanced',
 }
-
-import { IsString, IsOptional, IsNumber, IsArray, IsUUID, IsEnum, IsBoolean } from 'class-validator';
 
 export class CreateCourseWithModulesLessonsDto {
   @IsString()
