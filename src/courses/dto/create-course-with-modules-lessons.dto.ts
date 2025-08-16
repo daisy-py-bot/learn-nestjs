@@ -7,6 +7,7 @@ export enum LessonType {
   PDF = 'pdf',
   DOC = 'doc',
   IMAGE = 'image',
+  OTHER = 'other',
 }
 
 export class CreateLessonDto {
